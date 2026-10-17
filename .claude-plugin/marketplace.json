@@ -1,0 +1,15 @@
+{
+  "name": "slide-techvan",
+  "owner": {
+    "name": "Kishi-Satoshi"
+  },
+  "description": "テクバンのデザインで資料を作るためのスキル",
+  "plugins": [
+    {
+      "name": "slide-techvan",
+      "displayName": "slide-techvan",
+      "source": "./plugins/slide-techvan",
+      "description": "slide-techvan: テクバンのデザイン（紺と白のコーポレートデザイン）で PowerPoint 資料を作るスキル"
+    }
+  ]
+}

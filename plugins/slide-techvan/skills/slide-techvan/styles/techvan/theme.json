@@ -1,0 +1,112 @@
+{
+  "name": "techvan",
+  "label": "TECHVAN（紺と白のコーポレートデザイン）",
+  "colors": {
+    "bg": "FFFFFF",
+    "bg_alt": "EFF4FA",
+    "tint": "DCE8F5",
+    "primary": "194671",
+    "primary_dark": "163E64",
+    "heading": "1F4E79",
+    "emph": "2E75B6",
+    "marker": "C9DCF2",
+    "accent1": "2E6094",
+    "accent2": "5B84B1",
+    "text": "44546A",
+    "text_muted": "5F6F84",
+    "text_faint": "8496AB",
+    "on_primary": "FFFFFF",
+    "card_bg": "FFFFFF",
+    "card_border": "D8E2EE",
+    "rule": "D8E2EE",
+    "number": "194671",
+    "rating_high": "163E64",
+    "rating_mid": "5B84B1",
+    "rating_low": "9AA8B8",
+    "series": [
+      "194671",
+      "4A74A1",
+      "9AA8B8",
+      "2E75B6",
+      "C9D6E5"
+    ],
+    "line_soft": "B9CDE2",
+    "shadow": "A9B8C9",
+    "status": {
+      "done": [
+        "194671",
+        "FFFFFF"
+      ],
+      "doing": [
+        "2E75B6",
+        "FFFFFF"
+      ],
+      "late": [
+        "A33A3A",
+        "FFFFFF"
+      ],
+      "todo": [
+        "D8E2EE",
+        "44546A"
+      ]
+    },
+    "levels": {
+      "high": [
+        "194671",
+        "FFFFFF"
+      ],
+      "mid": [
+        "2E75B6",
+        "FFFFFF"
+      ],
+      "low": [
+        "D8E2EE",
+        "1F4E79"
+      ]
+    },
+    "confidential": "E0262D"
+  },
+  "fonts": {
+    "ja": "游ゴシック",
+    "latin": "游ゴシック",
+    "eyebrow_latin": "Arial",
+    "number_latin": "Arial"
+  },
+  "layouts": {
+    "cover": "3_白紙",
+    "section": "3_白紙",
+    "section_dark": "1_ユーザー設定レイアウト",
+    "body": "TECHVAN 本文（ラベル付き）",
+    "closing": "最終ページ②"
+  },
+  "metrics": {
+    "margin_x": 0.55,
+    "title_x": 0.55,
+    "title_size": 24,
+    "content_bottom": 6.85,
+    "callout_h": 0.58,
+    "sizes": {
+      "list_head": 16,
+      "list_detail": 13,
+      "card_title": 14,
+      "card_body": 13,
+      "card_body_large": 14,
+      "table_head": 12,
+      "table_body": 12,
+      "kpi_number": [
+        72,
+        64,
+        56,
+        48
+      ],
+      "note": 9.5,
+      "item_head": 16,
+      "body": 13,
+      "body_large": 14,
+      "body_small": 12,
+      "caption": 10.5,
+      "quote": 16
+    },
+    "radius": 0.06
+  }
+}
