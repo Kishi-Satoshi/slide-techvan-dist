@@ -12,6 +12,6 @@
 3. URL に `kishi-satoshi/slide-techvan-dist` を入れて「同期」
 4. 表示された slide-techvan を「インストール」
 
-画面の画像つきの説明書: https://kishi-satoshi.github.io/slide-techvan/
+画面の画像つきの説明書: https://kishi-satoshi.github.io/slide-techvan-dist/
 
 テクバン社内での利用を目的としたものです。
