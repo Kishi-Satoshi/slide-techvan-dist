@@ -409,7 +409,7 @@ footer.foot { border-top: 1px solid var(--line); padding-top: 18px; font-size: 1
         <li><a href="#install">プラグインを入れる</a>の手順で、URL に <code class="inline">kishi-satoshi/slide-techvan-dist</code> を入れて追加します。</li>
         <li>追加しただけでは使えません。表示された slide-techvan を<strong>「インストール」</strong>します。</li>
       </ol>
-      <div class="note"><strong>入れ替えられたか確かめるには</strong><p>「マーケットプレイスを管理」に <strong>slide-techvan-dist</strong>（URL の末尾が <code class="inline">-dist</code>）があり、「自分のもの」の「追加したマーケットプレイスから」に slide-techvan が出ていれば完了です。新しい会話で <code class="inline">/slide</code> と打つと <code class="inline">slide-techvan:slide-techvan</code> が候補に出ます。</p></div>
+      <div class="note"><strong>入れ替えられたか確かめるには</strong><p>「マーケットプレイスを管理」に <strong>slide-techvan-dist</strong>（URL の末尾が <code class="inline">-dist</code>）があり、「自分のもの」の「追加したマーケットプレイスから」に slide-techvan が出ていれば完了です。新しい会話で <code class="inline">/slide</code> と打つと <code class="inline">slide-techvan:slide-techvan</code> が候補に出ます。出ないときは、slide-techvan のスイッチをオフ → オンにし、Claude アプリを開き直してください。</p></div>
       <p class="muted">作った資料や設定は消えません。入れ直したあとは、新しく始めた会話から使えます。</p>
 
       <h3>さらに前の design-skills を入れていた人へ</h3>
@@ -429,7 +429,7 @@ footer.foot { border-top: 1px solid var(--line); padding-top: 18px; font-size: 1
           <thead><tr><th>こんなとき</th><th>どうする</th></tr></thead>
           <tbody>
             <tr><td>マーケットプレイスを追加するときに、リポジトリが見つからない・同期できない</td><td>URL が <code class="inline">kishi-satoshi/slide-techvan-dist</code> になっているか確かめてください（末尾の <code class="inline">-dist</code> を忘れやすいです）。</td></tr>
-            <tr><td><code class="inline">/slide</code> と打っても slide-techvan が出ない・使われない</td><td>プラグインが入っていない可能性があります。「追加したマーケットプレイスから」に slide-techvan があるか確かめ、無ければ<a href="#migrate">以前のリポジトリから入れていた人へ</a>の手順で入れ直してください。そのあと新しい会話を始めてください。</td></tr>
+            <tr><td><code class="inline">/slide</code> と打っても slide-techvan が出ない・使われない</td><td>プラグインが入っていない可能性があります。「追加したマーケットプレイスから」に slide-techvan があるか確かめ、無ければ<a href="#migrate">以前のリポジトリから入れていた人へ</a>の手順で入れ直してください。入っているのに出ないときは、slide-techvan のスイッチを一度オフにしてからオンに戻し、Claude アプリを終了して開き直してください（何度か繰り返すと出ることがあります）。そのあと新しい会話を始めてください。</td></tr>
             <tr><td>「更新を確認できませんでした」と出る</td><td>以前の場所から入れている可能性があります。<a href="#migrate">以前のリポジトリから入れていた人へ</a>の手順で入れ直してください。</td></tr>
             <tr><td>「python-pptx が入っていません」と出て止まった</td><td>ふだんは Claude がその場で入れて続けます。止まったときは「python-pptx を入れて続けて」と頼んでください。</td></tr>
             <tr><td>文字が収まらないという注意が消えない</td><td>「このページを 2 枚に分けて」「補足は注記に回して」と頼んでください。</td></tr>
