@@ -233,12 +233,12 @@ def compare(style, sd):
     for side in sides:
         K.max_chars_warn(side["heading"], 30, "比較の見出し")
         K.max_chars_warn(side["body"], 60, "比較の本文")
-        limit = 4 if side["body"] else 5
+        limit = 2 if side["body"] else 4
         if len(side["points"]) > limit:
             K.WARN.add(f"比較の箇条書きは {limit} 個までにしてください（いまは {len(side['points'])} 個"
-                       + ("。本文があるときは 4 個まで）" if side["body"] else "）"))
+                       + ("。本文があるときは 2 個まで）" if side["body"] else "）"))
         for p in side["points"]:
-            K.max_chars_warn(p, 30, "比較の箇条書き")
+            K.max_chars_warn(p, 25, "比較の箇条書き")
     z = _scale(style)
     hs, ls = z["item_head"], z["body_small"]
     mid = max(1.3, min(2.0, _em(arrow, True) * ls / 72 + 0.35)) if arrow else 0.95
@@ -645,7 +645,7 @@ def process(style, sd):
         return
     n = len(steps)
     has_period = any(st["period"] for st in steps)
-    body_max = 100 if n <= 3 else (70 if n == 4 else 50)
+    body_max = 85 if n <= 3 else (60 if n == 4 else (45 if n == 5 else 30))
     points_max = 3 if n <= 4 else 2
     for st in steps:
         K.max_chars_warn(st["title"], 16, "ステップの名前")

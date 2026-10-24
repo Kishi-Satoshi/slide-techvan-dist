@@ -82,30 +82,30 @@
   "metrics": {
     "margin_x": 0.55,
     "title_x": 0.55,
-    "title_size": 24,
+    "title_size": 28,
     "content_bottom": 6.85,
     "callout_h": 0.58,
     "sizes": {
-      "list_head": 16,
-      "list_detail": 13,
-      "card_title": 14,
-      "card_body": 13,
-      "card_body_large": 14,
-      "table_head": 12,
-      "table_body": 12,
+      "list_head": 20,
+      "list_detail": 18,
+      "card_title": 20,
+      "card_body": 18,
+      "card_body_large": 20,
+      "table_head": 14,
+      "table_body": 14,
       "kpi_number": [
         72,
         64,
         56,
         48
       ],
-      "note": 9.5,
-      "item_head": 16,
-      "body": 13,
-      "body_large": 14,
-      "body_small": 12,
-      "caption": 10.5,
-      "quote": 16
+      "note": 12,
+      "item_head": 20,
+      "body": 18,
+      "body_large": 20,
+      "body_small": 14,
+      "caption": 12,
+      "quote": 20
     },
     "radius": 0.06
   }

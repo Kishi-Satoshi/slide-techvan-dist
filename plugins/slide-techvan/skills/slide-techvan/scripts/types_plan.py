@@ -288,7 +288,7 @@ def _points_panel(style, s, a, points, title):
     style.sub_heading(s, a.x + pad, head_y, a.w - 2 * pad, title, z["item_head"])
     y = top
     for i, (p, h) in enumerate(zip(points, hs)):
-        K.max_chars_warn(p, 40, "読み取りのポイント")
+        K.max_chars_warn(p, {1: 40, 2: 40, 3: 25}.get(len(points), 16), "読み取りのポイント")
         style.marker(s, a.x + pad, y + max(0.0, (lh - d) / 2), i + 1, key)
         style.text(s, tx, y + off, _balanced_w(p, tw - 0.15, size) + 0.15, max(lh, h - off) + 0.04,
                    p, size, c["text"], anchor="t", fit_min=9.5, label="読み取りのポイント",
@@ -311,10 +311,25 @@ _CHART = {"column": XL_CHART_TYPE.COLUMN_CLUSTERED, "bar": XL_CHART_TYPE.BAR_CLU
           "stacked": XL_CHART_TYPE.COLUMN_STACKED}
 
 
+_KIND_JA = {"column": "縦棒グラフ", "bar": "横棒グラフ", "line": "折れ線グラフ", "pie": "円グラフ",
+            "stacked": "積み上げ縦棒グラフ"}
+
+
+def _chart_alt(kind, title, cats, data, unit):
+    """読み上げ用の代替テキスト（Office 基準 S3）。種類・見出し・値を短くまとめる。"""
+    u = unit or ""
+    parts = []
+    for name, nums in data:
+        vals = "、".join(f"{c} —" if v is None else f"{c} {v:g}{u}" for c, v in zip(cats, nums))
+        parts.append(f"{name}：{vals}" if name else vals)
+    text = f"{_KIND_JA.get(kind, 'グラフ')}。{K.plain(K.as_text(title))}。" + "／".join(parts)
+    return text if len(text) <= 300 else text[:299] + "…"
+
+
 def _font(font, style, size=None, color=None, bold=None):
     """グラフの文字の大きさ・色・書体（日本語の書体も）を指定する。"""
     if size is not None:
-        font.size = Pt(size)
+        font.size = Pt(max(size, 14))   # グラフの目盛・凡例・数値は 14pt 以上（Office 基準 S9）
     if color is not None:
         font.color.rgb = K.rgb(color)
     if bold is not None:
@@ -523,6 +538,7 @@ def chart(style, sd):
     for name, nums in data:
         cd.add_series(name, nums)
     gf = s.shapes.add_chart(_CHART[kind], Inches(fx), Inches(top), Inches(fw), Inches(fh), cd)
+    gf._element.nvGraphicFramePr.cNvPr.set("descr", _chart_alt(kind, sd.get("title", ""), cats, data, unit))
     ch = gf.chart
     ch.has_title = False
     _font(ch.font, style, z["body_small"], c["text"])

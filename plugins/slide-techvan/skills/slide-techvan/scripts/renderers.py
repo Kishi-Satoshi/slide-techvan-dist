@@ -88,7 +88,7 @@ def bullets(style, sd):
         hh = max(0.42, K.text_height(K.plain(it.get("text", "")), tw, head_size, True) + 0.06)
         dh = 0.0
         if it.get("detail"):
-            K.max_chars_warn(it["detail"], 90, "要点の補足")
+            K.max_chars_warn(it["detail"], 90 if n <= 3 else (75 if n <= 5 else 35), "要点の補足")
             dh = K.text_height(K.plain(it["detail"]), tw, det_size, line_spacing=1.05) + 0.06
         blocks.append((hh, dh))
     need = max(h + dd for h, dd in blocks)
@@ -243,7 +243,7 @@ def cards(style, sd):
         body = it.get("body", "")
         points = it.get("points") or []
         if body:
-            K.max_chars_warn(body, 110 if len(items) <= 3 else 80, "カードの本文")
+            K.max_chars_warn(body, {1: 110, 2: 110, 3: 100, 4: 55}.get(len(items), 30), "カードの本文")
         if body and points:
             body_h = min(inner.h * 0.6, K.text_height(K.plain(body), inner.w, size, line_spacing=1.08) + 0.12)
             style.text(s, inner.x, inner.y, inner.w, body_h, body, size, c["text"],
@@ -440,7 +440,7 @@ def table(style, sd):
     used = render_table(style, s, a, header, rows, sd.get("col_widths"), sd.get("align"),
                         sd.get("emphasis_col"), highlight_rows=hl)
     if note:
-        K.max_chars_warn(note, 120, "注記")
+        K.max_chars_warn(note, 60, "注記")
         style.note(s, Area(a.x, a.y + used + 0.12, a.w, 0.34), note)
 
 

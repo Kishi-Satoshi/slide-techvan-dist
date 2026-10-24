@@ -28,6 +28,22 @@ FONT_EN = "Arial"
 # 文字の高さに対する1行の高さ。游ゴシックは行の高さが大きいので余裕を見ておく
 LINE_HEIGHT = 1.38
 
+# 文字の大きさの下限（digital-agency-design-system の Office 基準 S9：本文 18pt 以上、補助の文字も 12pt 以上）。
+# 本文の種類（BODY_LABELS）は 18pt 未満にしない。それ以外の文字も 12pt 未満にしない。
+# 枠に入りきらないときも、下限より小さくは縮めず「はみ出す可能性」の警告を出す（スライドを分けるか文字を減らす）。
+MIN_PT = 12
+BODY_PT = 18
+BODY_LABELS = {
+    "カードの本文", "カードの箇条書き", "要点の補足", "補足の箇条書き", "比較の本文", "比較の箇条書き",
+    "ステップの本文", "ステップの箇条書き", "根拠の本文", "根拠の箇条書き", "回答", "引用",
+    "読み取りのポイント", "まとめの一文",
+}
+
+
+def floor_pt(label=""):
+    """その文字の種類の、大きさの下限。"""
+    return BODY_PT if label in BODY_LABELS else MIN_PT
+
 ALIGN = {"l": PP_ALIGN.LEFT, "c": PP_ALIGN.CENTER, "r": PP_ALIGN.RIGHT}
 ANCHOR = {"t": MSO_ANCHOR.TOP, "m": MSO_ANCHOR.MIDDLE, "b": MSO_ANCHOR.BOTTOM}
 
@@ -194,7 +210,7 @@ def style_run(run, size=None, bold=None, color=None, font=None, latin=None, ital
               spacing=None):
     f = run.font
     if size is not None:
-        f.size = Pt(size)
+        f.size = Pt(max(size, MIN_PT))
     if bold is not None:
         f.bold = bold
     if italic is not None:
@@ -367,6 +383,10 @@ def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, alig
         h = shape.height / 914400
     inner_w = w - 2 * margin - (0.22 if bullet else 0)
     inner_h = h - 2 * margin
+    floor = floor_pt(label)
+    size = max(size, floor)
+    if fit_min is not None:
+        fit_min = min(size, max(fit_min, floor))
     if fit_min is not None:
         size = fit_size(raw, inner_w, inner_h, size, fit_min, bold, line_spacing,
                         (spacing / size) if spacing else 0.0, label)
@@ -466,6 +486,10 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
     h = h if h is not None else ph.height / 914400
     text = as_text(text)
     raw = plain(text)
+    floor = floor_pt(label)
+    size = max(size, floor)
+    if fit_min is not None:
+        fit_min = min(size, max(fit_min, floor))
     if fit_min is not None:
         size = fit_size(raw, w - 0.2, h - 0.1, size, fit_min, bold, line_spacing, 0.0,
                         label or raw[:16])

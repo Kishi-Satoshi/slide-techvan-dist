@@ -207,7 +207,7 @@ def agenda(style, sd):
     desc_size = _pt(style, "body" if n <= 4 else "body_small")
     inset = min(0.24, row_h * 0.22)
     tx = a.x + pad + d + 0.26
-    ph = min(0.34, row_h - 0.1)
+    ph = min(max(0.34, _pt(style, "caption") * K.LINE_HEIGHT / 72 + 0.14), row_h - 0.1)   # ラベルの文字が縮まない高さ
     pill_w = 1.05 if cur is not None else 0.0
     right = a.right - pad - (pill_w + 0.25 if pill_w else 0.0)
     if has_desc:
@@ -489,7 +489,7 @@ def summary(style, sd):
     size = style.size("card_body", _pt(style, "body"))
     for it in points:
         if it.get("body"):
-            K.max_chars_warn(it["body"], 110 if n <= 3 else 80, "根拠の本文")
+            K.max_chars_warn(it["body"], {1: 120, 2: 120, 3: 75}.get(n, 50), "根拠の本文")
     with _same_header(style, points, w):
         def need(sz):
             return max(card_needed_height(style, it, w, sz) for it in points)
@@ -618,7 +618,7 @@ def next_actions(style, sd):
         while need(asz, nsz) > row_h + 0.1 and (asz > 11 or nsz > 9):
             asz = max(11.0, asz - 0.5)
             nsz = max(9.0, nsz - 0.5)
-    ph = min(0.34, row_h - 0.1)
+    ph = min(max(0.34, cap * K.LINE_HEIGHT / 72 + 0.14), row_h - 0.1)   # ラベルの文字が縮まない高さ
     due_pt = min(asz, int((row_h - 0.1) * 72 / K.LINE_HEIGHT * 2) / 2)
     if has_due:
         # 期限は1行で読めるように、一番長い期限が列に収まる大きさにする
@@ -664,7 +664,7 @@ def next_actions(style, sd):
             for lx in ([owner_x] if has_owner else []) + ([due_x] if has_due else []):
                 K.add_line(s.shapes, lx, y + inset, lx, y + row_h - inset, c["rule"], 0.75)
         if owners[i]:
-            K.max_chars_warn(owners[i], 14, "担当")
+            K.max_chars_warn(owners[i], 12, "担当")
             pw = min(owner_w - 0.3, K.text_em(owners[i], True) * cap / 72 + 0.5)
             style.pill(s, owner_x + (owner_w - pw) / 2, y + (row_h - ph) / 2, pw, ph,
                        it["owner"], tone="soft", size=cap)
@@ -826,7 +826,6 @@ def _faq_column(style, s, a, items, p, sep, row_h=None):
                    anchor="t", fit_min=min(11, p["q"]), label="質問")
         y += qh
         if it.get("a"):
-            K.max_chars_warn(it["a"], 100, "回答")
             y += p["qa"]
             style.marker(s, a.x, y, "A", p["mk"])
             off = (d - p["a"] * K.LINE_HEIGHT / 72) / 2
@@ -856,6 +855,9 @@ def faq(style, sd):
         items.append(it)
     if not items:
         return
+    # 回答の文字数の上限は、2列に分ける前の全体の数で決める
+    for it in items:
+        K.max_chars_warn(it.get("a", ""), 75 if len(items) <= 3 else 30, "回答")
     levels = _faq_levels(style)
     cols = [(a, items)]
     # 1列で、質問を本文の大きさまで縮めても入らないときは2列にする（4個以上のとき）

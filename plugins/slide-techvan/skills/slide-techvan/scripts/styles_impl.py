@@ -135,12 +135,12 @@ class BaseStyle:
         """callout（まとめの一文）と note（注記）の場所を下から確保して描く。"""
         gap = 0.16
         if sd.get("note"):
-            K.max_chars_warn(sd["note"], 120, "注記")
+            K.max_chars_warn(sd["note"], 60, "注記")
             h = 0.34
             self.note(slide, Area(area.x, area.bottom - h, area.w, h), sd["note"])
             area = Area(area.x, area.y, area.w, area.h - h - 0.06)
         if sd.get("callout"):
-            K.max_chars_warn(sd["callout"], 60, "まとめの一文（callout）")
+            K.max_chars_warn(sd["callout"], 40, "まとめの一文（callout）")
             h = self.m.get("callout_h", 0.5)
             self.callout(slide, Area(area.x, area.bottom - h, area.w, h), sd["callout"])
             area = Area(area.x, area.y, area.w, area.h - h - gap)
@@ -406,7 +406,7 @@ class TechvanStyle(BaseStyle):
                           anchor="m", fit_min=11, label="章のサブタイトル")
             if sd.get("en"):
                 self.text(s, cx, 4.4, w, 0.4, "-  " + " ".join(sd["en"]) + "  -", 13,
-                          c["text_faint"], align="c", anchor="m", latin=self.font("eyebrow_latin"),
+                          c["text_muted"], align="c", anchor="m", latin=self.font("eyebrow_latin"),
                           spacing=2)
         self.cleanup(s)
         return s
@@ -452,8 +452,8 @@ class TechvanStyle(BaseStyle):
                            emph_color=c["emph"], fit_min=16, label="見出し", marker=c.get("marker"))
         top = 1.42
         if sd.get("lead"):
-            K.max_chars_warn(sd["lead"], 80, "リード文")
-            self.text(s, x, 1.14, w, 0.3, sd["lead"], 12, c["text"], anchor="m", fit_min=10,
+            K.max_chars_warn(sd["lead"], 60, "リード文")
+            self.text(s, x, 1.14, w, 0.3, sd["lead"], 14, c["text"], anchor="m", fit_min=12,
                       label="リード文", marker=c.get("marker"))
             top = 1.72
         area = self.content_area(top)
