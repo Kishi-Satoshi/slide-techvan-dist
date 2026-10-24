@@ -169,7 +169,24 @@ def main():
             print("  - " + w)
     else:
         print("確認が必要な点はありません")
+    print_text_notes(deck)
     return 0
+
+
+def print_text_notes(deck):
+    """文面の確認（check_text.py）。作成の成否には関係させない。"""
+    try:
+        import check_text
+        notes = check_text.check(deck)
+    except Exception as e:  # noqa: BLE001 - 文面の検査が失敗しても作成は成功のまま
+        print(f"文面の確認ができませんでした（{type(e).__name__}）")
+        return
+    if notes:
+        print(f"文面の確認（{len(notes)} 件。references/ai-smell-ja.md の言い換えの例を参考に）:")
+        for n in notes:
+            print("  - " + n)
+    else:
+        print("文面の確認: 指摘はありません")
 
 
 if __name__ == "__main__":

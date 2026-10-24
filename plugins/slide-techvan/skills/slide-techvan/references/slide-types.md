@@ -88,7 +88,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### summary（エグゼクティブサマリー）
 
 ```json
-{"type": "summary", "title": "テスト工程の見直しで、出荷後の不具合を半減できます",
+{"type": "summary", "title": "テスト工程の見直しで、出荷後の不具合は半減",
  "conclusion": "結論を2行以内で（例: 3つの施策で、出荷後の不具合を年間 40 件から 20 件に減らす）",
  "points": [
    {"heading": "原因は周辺条件に集中", "body": "公表事例の8割がタイミング・環境条件に起因"},
@@ -103,7 +103,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### next-actions（まとめ・次のアクション）
 
 ```json
-{"type": "next-actions", "title": "11月中に3点を決め、12月から試行します",
+{"type": "next-actions", "title": "11月中に2点を決定、12月から試行",
  "items": [
    {"action": "夜間当番の増員を決定", "owner": "情報システム部", "due": "11/15"},
    {"action": "よくある質問 20 件を公開", "owner": "ヘルプデスク", "due": "11/30", "note": "夜間に多い質問から"}
@@ -175,7 +175,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### options（案の比較）
 
 ```json
-{"type": "options", "title": "B案（段階導入）が費用と効果のバランスで優れています",
+{"type": "options", "title": "費用と効果のバランスはB案（段階導入）が最良",
  "options": ["A案：一括導入", "B案：段階導入", "C案：現状維持"],
  "criteria": ["効果", "費用", "期間", "リスク"],
  "scores": [["◎", "○", "△"], ["△", "○", "◎"], ["○", "○", "◎"], ["△", "◎", "○"]],
@@ -189,7 +189,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### matrix（2×2 のマトリクス）
 
 ```json
-{"type": "matrix", "title": "まず「効果が大きく、手間が小さい」2施策から着手します",
+{"type": "matrix", "title": "着手は「効果が大きく、手間が小さい」2施策から",
  "x": {"label": "手間", "low": "小", "high": "大"},
  "y": {"label": "効果", "low": "小", "high": "大"},
  "quadrants": [
@@ -207,7 +207,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### process（手順・フェーズ）
 
 ```json
-{"type": "process", "title": "4つのステップで、3か月で全社展開します", "steps": [
+{"type": "process", "title": "4ステップ・3か月で全社展開", "steps": [
   {"title": "現状調査", "period": "10月", "body": "問い合わせ記録の分析", "points": ["…"]},
   {"title": "手順の一本化", "period": "11月", "body": "…"}
 ]}
@@ -218,7 +218,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### tree（ロジックツリー）
 
 ```json
-{"type": "tree", "title": "対応時間が長い原因は、3つに分解できます",
+{"type": "tree", "title": "対応時間が長い原因は、人・手順・道具の3つ",
  "root": "対応時間が長い",
  "branches": [
    {"text": "切り分けが遅い", "children": ["手順書が分散", "履歴が探しにくい"]},
@@ -248,7 +248,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### chart（グラフ）
 
 ```json
-{"type": "chart", "title": "問い合わせは夜間帯だけが増えています",
+{"type": "chart", "title": "増えているのは夜間帯の問い合わせだけ",
  "chart": "column",               // column（縦棒）/ bar（横棒）/ line（折れ線）/ pie（円）/ stacked（積み上げ縦棒）
  "categories": ["4月", "5月", "6月"],
  "series": [{"name": "日中", "values": [420, 410, 430]}, {"name": "夜間", "values": [120, 150, 180]}],
@@ -267,7 +267,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### schedule（スケジュール）
 
 ```json
-{"type": "schedule", "title": "11月に試行を始め、2月に全社へ展開します",
+{"type": "schedule", "title": "11月に試行、2月に全社へ展開",
  "periods": ["10月", "11月", "12月", "1月", "2月"],
  "tasks": [
    {"name": "現状調査", "start": 0, "end": 0, "owner": "情シス"},
@@ -281,7 +281,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### team（体制）
 
 ```json
-{"type": "team", "title": "3チーム・9名の体制で進めます",
+{"type": "team", "title": "3チーム・9名の体制",
  "leader": {"role": "プロジェクト責任者", "name": "山田"},
  "groups": [
    {"role": "調査チーム", "name": "佐藤ほか2名", "note": "記録の分析"},
@@ -293,7 +293,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### cost（費用・見積）
 
 ```json
-{"type": "cost", "title": "初期費用 480 万円、年間の運用費 120 万円です",
+{"type": "cost", "title": "初期費用 480 万円、年間の運用費 120 万円",
  "items": [
    {"name": "調査・分析", "detail": "1か月", "amount": "120"},
    {"name": "手順書の整備", "detail": "2か月", "amount": "360"}
@@ -309,7 +309,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### risks（リスクと対策）
 
 ```json
-{"type": "risks", "title": "主なリスクは3つ。いずれも事前の対策で抑えられます",
+{"type": "risks", "title": "主なリスクは2つ、いずれも事前の対策で抑制可能",
  "items": [
    {"risk": "現場の負担が一時的に増える", "level": "高", "measure": "移行期間は当番を1名追加", "owner": "情シス"}
  ]}
@@ -319,7 +319,7 @@ deck.json は UTF-8 の JSON。文字の中の `**…**` は強調（太字＋�
 ### status（課題・進捗一覧）
 
 ```json
-{"type": "status", "title": "5件中4件は順調。1件は人員の手当てが必要です",
+{"type": "status", "title": "5件中4件は順調、1件は人員の手当てが必要",
  "items": [
    {"name": "よくある質問の追加", "status": "完了", "progress": 100, "owner": "ヘルプデスク", "due": "10/31", "note": ""},
    {"name": "夜間当番の増員", "status": "遅延", "progress": 30, "note": "候補者の調整中"}
