@@ -7,6 +7,7 @@
   3. 見出しの語尾のそろいすぎ（です・ます で終わる見出しが半分以上、同じ語尾が 3 枚続く）
   4. 列挙の数のそろいすぎ（ほとんどが 3 個）
   5. 文頭の接続詞の連発
+あわせて、推測で置いた箇所（「（仮）」「仮説」「見込み」）を一覧にする（provisional。指摘の件数には入れない）。
 
 指摘は直すきっかけで、作成は止めない。build_pptx.py が作成のあとに自動で呼ぶ。
 単体でも使える:
@@ -177,6 +178,25 @@ def check(deck, lexicon=None):
     return notes
 
 
+PROVISIONAL = re.compile(r"（仮）|\(仮\)|仮説|見込み")
+
+
+def provisional(deck):
+    """推測で置いた箇所（「（仮）」「仮説」「見込み」を含む文字）の一覧。
+    文面の確認（check）の件数には入れない。渡す前に利用者に確かめてもらうための一覧。"""
+    out = []
+    for i, s in enumerate(deck.get("slides", []), start=1):
+        if not isinstance(s, dict):
+            continue
+        seen = set()
+        for _, text in strings(s):
+            if PROVISIONAL.search(text) and text not in seen:
+                seen.add(text)
+                short = text if len(text) <= 40 else text[:39] + "…"
+                out.append(f"{i}枚目（{s.get('type', '')}）: {short}")
+    return out
+
+
 def main():
     if len(sys.argv) != 2:
         print(__doc__)
@@ -190,6 +210,11 @@ def main():
             print("  - " + n)
     else:
         print("文面の確認: 指摘はありません")
+    prov = provisional(deck)
+    if prov:
+        print(f"仮のまま残っている箇所（{len(prov)} 件。渡す前に確かめてもらう）:")
+        for p in prov:
+            print("  - " + p)
     return 0
 
 
