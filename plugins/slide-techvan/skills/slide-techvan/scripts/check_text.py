@@ -7,6 +7,7 @@
   3. 見出しの語尾のそろいすぎ（です・ます で終わる見出しが半分以上、同じ語尾が 3 枚続く）
   4. 列挙の数のそろいすぎ（ほとんどが 3 個）
   5. 文頭の接続詞の連発
+  6. 次のアクション・進捗の担当と期限の空欄
 
 指摘は直すきっかけで、作成は止めない。build_pptx.py が作成のあとに自動で呼ぶ。
 単体でも使える:
@@ -30,6 +31,8 @@ ENUM_KEYS = {
     "tree": ["branches"], "process": ["steps"], "risks": ["items"], "next-actions": ["items"],
     "chart": ["points"], "compare": ["left.points", "right.points"],
 }
+# 担当（owner）と期限（due）を必ず書く型
+OWNER_DUE_TYPES = {"next-actions", "status"}
 HEAD_KEYS = {"title", "lead", "subtitle"}
 TABLE_KEYS = {"rows", "header"}
 SKIP_KEYS = {"type", "confidential", "en", "number", "variant", "chart", "unit", "start", "end",
@@ -148,6 +151,14 @@ def check(deck, lexicon=None):
             titles.append((i, plain(title)))
             if is_label(title):
                 notes.append(f"{where}見出し「{plain(title)}」がラベルのままです。結論を言い切る文にしてください")
+        if t in OWNER_DUE_TYPES and isinstance(s.get("items"), list):
+            rows = [it for it in s["items"] if isinstance(it, dict)]
+            no_owner = sum(1 for it in rows if not plain(str(it.get("owner", "") or "")))
+            no_due = sum(1 for it in rows if not plain(str(it.get("due", "") or "")))
+            if no_owner:
+                notes.append(f"{where}担当が空の行が {no_owner} 行あります。誰がやるかを書いてください（決まっていなければ「未定」）")
+            if no_due:
+                notes.append(f"{where}期限が空の行が {no_due} 行あります。いつまでにを書いてください（決まっていなければ「未定」）")
         for key in ENUM_KEYS.get(t, []):
             v = get_path(s, key)
             if isinstance(v, list) and len(v) >= 2:
