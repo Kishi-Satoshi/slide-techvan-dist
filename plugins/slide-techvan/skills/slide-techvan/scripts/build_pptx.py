@@ -178,7 +178,6 @@ def print_text_notes(deck):
     try:
         import check_text
         notes = check_text.check(deck)
-        prov = check_text.provisional(deck)
     except Exception as e:  # noqa: BLE001 - 文面の検査が失敗しても作成は成功のまま
         print(f"文面の確認ができませんでした（{type(e).__name__}）")
         return
@@ -188,10 +187,6 @@ def print_text_notes(deck):
             print("  - " + n)
     else:
         print("文面の確認: 指摘はありません")
-    if prov:
-        print(f"仮のまま残っている箇所（{len(prov)} 件。渡すときに一覧を添えて確かめてもらう）:")
-        for p in prov:
-            print("  - " + p)
 
 
 if __name__ == "__main__":
