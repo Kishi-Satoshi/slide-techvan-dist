@@ -182,8 +182,10 @@ def card_grid(n, a, gap=0.28, needed=None, min_h=1.9):
         else:
             heights.append(full_h)
         k += cols
-    # 本体は上詰め（どの型でも本体の始まる高さをそろえる）
-    y = a.y
+    # カードは例外として、縮めたときは全体を上下中央に寄せる（下に大きな空きを残さない）。
+    # 中身で領域が埋まるときは上詰めと同じ位置になる
+    total = sum(heights) + gap * (nrows - 1)
+    y = a.y + max(0.0, (a.h - total) / 2)
     boxes = []
     for cols, rh in zip(rows, heights):
         w = (a.w - gap * (cols - 1)) / cols

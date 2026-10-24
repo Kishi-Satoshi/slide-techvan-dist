@@ -2,13 +2,16 @@
 
 `skills/slide-techvan/references/ai-smell-ja.md`（機械が書いたように見える言い回しの一覧とパターン）は、
 次の 2 つのプロジェクトの基準を参考に、スライド資料に関係するものを選んで日本語で書き直したものです。
+また、カードの型で項目が少ないときに上下中央に置く描き方（`skills/slide-techvan/scripts/renderers.py`）と、
+同じ型を続けない書き方のルール（`skills/slide-techvan/references/writing-rules.md` §1）は、
+carnot-tech/jinba-consulting-pptx-skill の基準を参考にしました。
 どちらも MIT ライセンスで公開されています。ライセンス文を以下に示します。
 
 ---
 
 ## carnot-tech/jinba-consulting-pptx-skill
 
-参考にしたもの: `references/ai-smell-lexicon.md`
+参考にしたもの: `references/ai-smell-lexicon.md`、`references/slide-rules.md`（§4.12・§4.60）
 
 ```
 MIT License

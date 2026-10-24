@@ -86,7 +86,7 @@ class BaseStyle:
     # ------------------------------------------------------------ 型で共通に使う決まり
     #   文字サイズ: size("item_head"|"body"|"body_large"|"body_small"|"caption"|"quote", 既定)
     #   段組みの間隔: gutter()
-    #   本体の置き方: 本体は style.body() が返す Area の上端（a.y）から上詰めで置く（上下中央に寄せない）
+    #   本体の置き方: 本体は style.body() が返す Area の上端（a.y）から上詰めで置く（上下中央に寄せない。例外はカードの型だけで、項目が少なく縮めたときは上下中央）
     #   番号の丸: marker(slide, x, y, text, size="m"|"l"|"s", solid=False) … 大きさは 3 段階だけ
 
     MARKER = {"s": (0.36, 11), "m": (0.46, 14), "l": (0.6, 18)}
