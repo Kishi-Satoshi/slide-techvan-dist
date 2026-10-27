@@ -14,4 +14,6 @@
 
 画面の画像つきの説明書: https://kishi-satoshi.github.io/slide-techvan-dist/
 
+Microsoft 365 Copilot（Copilot Cowork）で使う場合（試験的）: `cowork/slide-techvan.zip` を Cowork の「カスタマイズ」→「スキル」→「スキルのアップロード」で取り込みます。手順は説明書の「Microsoft 365 Copilot で使う」にあります。
+
 テクバン社内での利用を目的としたものです。
