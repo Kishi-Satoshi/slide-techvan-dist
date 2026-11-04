@@ -818,8 +818,10 @@ def schedule(style, sd):
         if t.get("milestone"):
             d = min(0.38, rh * 0.62)
             mx = tx + (en + 0.5) * pw - d / 2
-            K.add_box(s.shapes, mx, cy - d / 2, d, d, fill=mark, line=WHITE, line_w=1.25,
-                      geom="diamond")
+            dia = K.add_box(s.shapes, mx, cy - d / 2, d, d, fill=mark, line=WHITE, line_w=1.25,
+                            geom="diamond")
+            # 印は文字を持たないので、読み上げ用に「何の節目か・いつか」を代替テキストに書く
+            K.set_alt(dia, f"{K.plain(name)}（節目）: {periods[en]}")
             if label:
                 # 節目の補足（任意）は印の右に。右に余裕がなければ左に置く
                 lw = min(2.4, K.text_em(K.plain(label)) * cap / 72 + 0.1)
@@ -830,8 +832,10 @@ def schedule(style, sd):
         else:
             bx = tx + st * pw + 0.08
             bw = (en - st + 1) * pw - 0.16
-            K.add_box(s.shapes, bx, cy - bh / 2, bw, bh, fill=bar, geom="round",
-                      radius=bh * 0.35)
+            band = K.add_box(s.shapes, bx, cy - bh / 2, bw, bh, fill=bar, geom="round",
+                             radius=bh * 0.35)
+            span = periods[st] if st == en else f"{periods[st]}〜{periods[en]}"
+            K.set_alt(band, f"{K.plain(name)}: {span}")
             if label:
                 style.text(s, bx, cy - bh / 2, bw, bh, label, cap, _on(c, bar),
                            bold=True, align="c", anchor="m", fit_min=9, label="帯の文字")

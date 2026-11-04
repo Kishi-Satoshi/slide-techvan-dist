@@ -47,6 +47,8 @@ class BaseStyle:
         self.layouts = self._find_layouts(theme["layouts"])
         self.current_section = {}
         self.audience = deck.get("audience", "internal")
+        # 強調語（emph の色で書いた文字）の下に、marker の色の帯（太い下線）を付ける
+        K.EMPH_BAND = (self.c["emph"], self.c["marker"]) if self.c.get("marker") else None
 
     # ------------------------------------------------------------ 共通
 
@@ -94,11 +96,20 @@ class BaseStyle:
     def gutter(self):
         return 0.28
 
-    def marker(self, slide, x, y, text, size="m", solid=False, muted=False):
+    def marker(self, slide, x, y, text, size="m", solid=False, muted=False, icon=None):
         """番号や Q・A などの丸。左上 (x, y) に置き、直径を返す。
-        solid=True は濃い丸（目次の番号・Q など）、muted=True は控えめな丸（選ばれていない項目など）。"""
+        solid=True は濃い丸（目次の番号・Q など）、muted=True は控えめな丸（選ばれていない項目など）。
+        icon にアイコンの名前（assets/da-icons.json。例 "help"・"help_fill"）を渡すと、番号の代わりにアイコンを置く。"""
         d, pt = self.MARKER[size]
         c = self.c
+        if icon:
+            if self.icon_known(icon):
+                fill, line, _ = self._marker_colors()
+                K.add_box(slide.shapes, x, y, d, d, fill=fill, line=line, line_w=0.75, geom="oval")
+                k = d * 0.62
+                K.add_icon(slide.shapes, icon, x + (d - k) / 2, y + (d - k) / 2, k)
+                return d
+            K.WARN.add(f"アイコン「{icon}」はありません。references/slide-types.md の「アイコン」の一覧の名前にしてください")
         if muted:
             fill, line, color = c["bg_alt"], c.get("line_soft"), c["text_muted"]
         elif solid:
@@ -113,6 +124,11 @@ class BaseStyle:
     def _marker_colors(self):
         c = self.c
         return c["bg_alt"], None, c["heading"]
+
+    @staticmethod
+    def icon_known(name):
+        base = name[:-5] if name.endswith(("_line", "_fill")) else name
+        return base in K.icon_data()["icons"]
 
     def radius(self):
         return self.m.get("radius", 0.08)
@@ -356,11 +372,11 @@ class TechvanStyle(BaseStyle):
         K.place(ph, cx, y, w, th)
         K.fill_placeholder(ph, title, 34, c["primary"], bold=True, align="c", anchor="m",
                            font=self.font("ja"), latin=self.font("latin"), fit_min=24,
-                           emph_color=c["emph"], label="表紙のタイトル", marker=c.get("marker"))
+                           emph_color=c["emph"], label="表紙のタイトル")
         y += th + 0.1
         if sd.get("subtitle"):
             self.text(s, cx, y, w, 0.4, "― " + sd["subtitle"] + " ―", 14, c["text"],
-                      align="c", anchor="m", fit_min=11, label="サブタイトル", marker=c.get("marker"))
+                      align="c", anchor="m", fit_min=11, label="サブタイトル")
             y += 0.65
         K.add_line(s.shapes, cx + w / 2 - 1.65, y, cx + w / 2 + 1.65, y, c["line_soft"], 1.0)
         y += 0.2
@@ -398,6 +414,15 @@ class TechvanStyle(BaseStyle):
                 self.text(s, 1.57, 3.85, 8.6, 0.45, sd["subtitle"], 16, "FFFFFF", fit_min=11)
         else:
             cx, w = 1.2, 7.5
+            ill = sd.get("illustration")
+            if ill:
+                # 挿絵があるときは、文字を左に寄せ、右（斜めの飾りの手前）に挿絵を置く
+                cx, w = 0.8, 5.0
+                alt = sd.get("illustration_alt") or "イラスト"
+                if not sd.get("illustration_alt"):
+                    K.WARN.add("挿絵（illustration）には、何の絵かを書いた illustration_alt を付けてください")
+                if K.add_illustration(s.shapes, ill, 5.9, 2.2, 2.7, 3.0, alt) is None:
+                    K.WARN.add(f"イラスト「{ill}」はありません。references/slide-types.md の「イラスト」の一覧の名前にしてください")
             K.place(ph, cx, 2.9, w, 0.9)
             K.fill_placeholder(ph, title, 40, c["primary"], bold=True, align="c", anchor="m",
                                font=self.font("ja"), fit_min=24, label="章のタイトル")
@@ -424,7 +449,8 @@ class TechvanStyle(BaseStyle):
     # ------------------------------------------------------------ 本文ページ
 
     def body(self, sd):
-        """英字ラベル（y0.28）→ 見出し（y0.56）→ リード文（y1.14）→ 本体（y1.72〜）。"""
+        """テンプレートの「ユーザー設定レイアウト」（左上の旗の飾り付き）で本文ページを作る。
+        見出し（レイアウトの位置 y0.29）→ 英字ラベル（y0.98）→ リード文 → 本体（y1.42〜。リード文があれば y1.72〜）。"""
         s = self.new_slide("body")
         c = self.c
         m = self.m
@@ -439,23 +465,34 @@ class TechvanStyle(BaseStyle):
             parts.append("-  " + K.spaced_ja(ja) + "  -")
         level = self.confidential_level(sd)
         mark_w = 1.95
-        if level:
-            self.confidential_mark(s, level, K.SLIDE_W - x - mark_w, 0.17, mark_w)
-        if parts:
-            self.text(s, x, 0.28, w - (mark_w + 0.2 if level else 0), 0.28, "  ".join(parts),
-                      10.5, c["primary"], bold=True,
-                      latin=self.font("eyebrow_latin"), spacing=3, anchor="m", tidy=False)
+        mark_x = K.SLIDE_W - x - mark_w
         title = sd.get("title", "")
         K.max_chars_warn(title, 36, "見出し")
-        K.fill_placeholder(s.shapes.title, title, m["title_size"], c["heading"], bold=True,
+        ph = s.shapes.title
+        tx, ty = ph.left / 914400, ph.top / 914400
+        tw, th = ph.width / 914400, ph.height / 914400
+        if level:
+            # CONFIDENTIAL のマークは見出しの下の行の右端（見出しは幅いっぱいに使う）
+            self.confidential_mark(s, level, mark_x, ty + th + 0.01, mark_w)
+        K.fill_placeholder(ph, title, m["title_size"], c["heading"], bold=True,
                            anchor="m", font=self.font("ja"), latin=self.font("latin"),
-                           emph_color=c["emph"], fit_min=16, label="見出し", marker=c.get("marker"))
+                           emph_color=c["emph"], fit_min=16, label="見出し", w=tw, h=th)
+        # 英字ラベルとリード文は、見出しの文字の左端にそろえる
+        lx = tx + K._inset(ph, "lIns", 91440)
+        lw = (mark_x - 0.15 if level else K.SLIDE_W - x) - lx
+        y = ty + th + 0.06
+        if parts:
+            self.text(s, lx, y, lw, 0.26, "  ".join(parts),
+                      10.5, c["primary"], bold=True,
+                      latin=self.font("eyebrow_latin"), spacing=3, anchor="m", tidy=False)
+            y += 0.28
         top = 1.42
         if sd.get("lead"):
             K.max_chars_warn(sd["lead"], 60, "リード文")
-            self.text(s, x, 1.14, w, 0.3, sd["lead"], 14, c["text"], anchor="m", fit_min=12,
-                      label="リード文", marker=c.get("marker"))
-            top = 1.72
+            ly = max(1.14, y)
+            self.text(s, lx, ly, lw, 0.3, sd["lead"], 14, c["text"], anchor="m", fit_min=12,
+                      label="リード文")
+            top = max(1.72, ly + 0.46)
         area = self.content_area(top)
         area = self.reserve_bottom(s, area, sd)
         self.cleanup(s)
@@ -503,7 +540,7 @@ class TechvanStyle(BaseStyle):
         self.plain_card(slide, a, highlight=highlight)
         pad = 0.24
         y = a.y + 0.2
-        d = self.marker(slide, a.x + pad, y, item.get("mark", idx + 1), "m")
+        d = self.marker(slide, a.x + pad, y, item.get("mark", idx + 1), "m", icon=item.get("icon"))
         hx = a.x + pad + d + 0.14
         hw = a.right - hx - 0.18
         self.text(slide, hx, y, hw, d, self._card_title(item), self.size("card_title", 14),

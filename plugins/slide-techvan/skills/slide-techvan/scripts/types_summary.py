@@ -177,7 +177,7 @@ def _card_content(style, s, inner, it, size):
 def agenda(style, sd):
     """目次。items: [{title, desc}]（2〜6個）。current で今の章（0 から数える）を強調する。
 
-    ラベルを指定しなければ「AGENDA ／ 目次」にする（直前の章扉のラベルは引き継がない）。"""
+    ラベルを指定しなければ「AGENDA - 目次 -」にする（直前の章扉のラベルは引き継がない）。"""
     s, a = style.body(_default_label(style, sd, "AGENDA", "目次", True))
     c = style.c
     items = _items(sd.get("items"), "title", ("title", "desc"))
@@ -362,8 +362,9 @@ def notes(style, sd):
     """注記・出典。notes: [文字列]、sources: [文字列]。
 
     両方あれば同じ幅で左右に並べる（文が長くて左右では窮屈なときは上下に積む）。
-    2つの箱は同じ部品（plain_card）で、高さは中身に合わせる。"""
-    s, a = style.body(sd)
+    2つの箱は同じ部品（plain_card）で、高さは中身に合わせる。
+    ラベルを指定しなければ「NOTES - 注記 -」にする（直前の章扉のラベルは引き継がない）。"""
+    s, a = style.body(_default_label(style, sd, "NOTES", "注記", True))
     notes_ = _note_texts(sd.get("notes"))
     sources = _note_texts(sd.get("sources"))
     if not notes_ and not sources:
@@ -425,7 +426,7 @@ def notes(style, sd):
             y = box.bottom + g
 
 
-# ====================================================================== エグゼクティブサマリー
+# ====================================================================== 要約（summary）
 
 def _conclusion(text, w, top, low):
     """結論の文字の大きさ（2行に収まるまで top から low まで縮める）と、結論の面の高さ。"""
@@ -438,11 +439,11 @@ def _conclusion(text, w, top, low):
 
 @register("summary")
 def summary(style, sd):
-    """エグゼクティブサマリー。conclusion（2行以内）＋ points: [{heading, body, points}]（2〜4個）。
+    """要約（summary）。conclusion（2行以内）＋ points: [{heading, body, points}]（2〜4個）。
 
     上から結論の面 → 根拠のカード（a.x〜a.right を等分）の順に詰めて置く。
     根拠に body か points があればカードで並べ、見出しだけなら番号つきの箇条書きにする。
-    ラベルを指定せず、直前に章扉もないときは「SUMMARY ／ 要約」にする。"""
+    ラベルを指定せず、直前に章扉もないときは「SUMMARY - 要約 -」にする。"""
     s, a = style.body(_default_label(style, sd, "SUMMARY", "要約", False))
     c = style.c
     conclusion = _s(sd.get("conclusion")).strip()

@@ -96,7 +96,7 @@ def bullets(style, sd):
     pitch = max(pitch, min(a.h / n, need + 0.2))
     y = a.y
     for i, (it, (hh, dh)) in enumerate(zip(items, blocks)):
-        style.marker(s, a.x, y + (hh - d) / 2, it.get("mark", i + 1), "m")
+        style.marker(s, a.x, y + (hh - d) / 2, it.get("mark", i + 1), "m", icon=it.get("icon"))
         if has_detail:
             style.text(s, tx, y, tw, hh, it.get("text", ""), head_size, c["heading"], bold=True,
                        anchor="m", fit_min=12, label="要点")
@@ -344,7 +344,9 @@ def render_table(style, s, a, header, rows, col_widths=None, aligns=None, emph_c
             total += heights[-1]
         return total, heights
 
-    size = min(size_max, style.size("table_body", size_max))
+    # 下限（12pt）より小さくは見積もらない（描くときは下限まで大きくなるため、見積もりもそろえる）
+    size_min = max(size_min, K.MIN_PT)
+    size = max(size_min, min(size_max, style.size("table_body", size_max)))
     while size > size_min:
         total, heights = needed(size)
         if total <= a.h:

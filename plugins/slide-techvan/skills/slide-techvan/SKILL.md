@@ -27,7 +27,12 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
 
 - 資料の種類ごとの標準の流れ: `${CLAUDE_SKILL_DIR}/references/storylines.md`
 - 使える型（24種）と deck.json の書き方: `${CLAUDE_SKILL_DIR}/references/slide-types.md`
+  （末尾に、カード・箇条書きで使えるアイコンと、章扉の挿絵の一覧がある。デジタル庁の素材。使うのは内容に合うときだけ）
 - 書き方のルール: `${CLAUDE_SKILL_DIR}/references/writing-rules.md`（見出しは結論を言い切る文、1スライド1メッセージ、文字数の目安）
+- 文面の推敲の基準: `${CLAUDE_SKILL_DIR}/references/text-polish.md`。作業フォルダの `.claude/text-polish.setting` に書かれた
+  推敲（natural-japanese・yomiyasu・japanese-tech-writing。1 行に 1 つ）の節を使う。依頼の中で名前を言われたら（「推敲は yomiyasu も」など）それを使う。
+  どちらも無ければ natural-japanese だけ。
+  deck.json を書く前に、選んだ節に目を通す（見出しは writing-rules.md §2 が優先）。
 
 - 24 種の型をすべて使った deck.json の見本: `${CLAUDE_SKILL_DIR}/examples/catalog.deck.json`
   （同じフォルダに、これで作った PowerPoint と一覧画像がある）
@@ -83,6 +88,7 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
 6. 続けて「文面の確認」が出たら（機械が書いたように見える言い回し・見出しの語尾や列挙の数のそろいすぎ）、
    `references/ai-smell-ja.md` の言い換えの例を見て deck.json を直し、もう一度生成する。
    文脈上それが正しい使い方なら、そのままでよい。
+   指摘が無くても、`references/text-polish.md` の選んだ節で deck.json の文面を一度見直す（事実・数字・見出しの形は変えない）。
 
 `${CLAUDE_SKILL_DIR}` はこのスキルのフォルダを指す（スキルを読み込んだときに実際のパスに置き換わる）。
 置き換わっていない場合は、この SKILL.md があるフォルダのパスを使う。

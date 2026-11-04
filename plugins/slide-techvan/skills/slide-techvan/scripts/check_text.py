@@ -36,7 +36,7 @@ OWNER_DUE_TYPES = {"next-actions", "status"}
 HEAD_KEYS = {"title", "lead", "subtitle"}
 TABLE_KEYS = {"rows", "header"}
 SKIP_KEYS = {"type", "confidential", "en", "number", "variant", "chart", "unit", "start", "end",
-             "milestone", "status", "level", "score", "scores", "icon", "color"}
+             "milestone", "status", "level", "score", "scores", "icon", "color", "illustration"}
 CONNECTIVES = ("また", "さらに", "加えて", "したがって", "そのため", "このように")
 PARTICLES = set("はがをにでとへも")
 EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-➿⭐⭕✅❌❗‼⁉]")

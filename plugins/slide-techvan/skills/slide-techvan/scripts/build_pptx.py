@@ -97,6 +97,11 @@ def check_deck(deck):
             raise DeckError(f"{i}枚目のスライドに \"type\" がありません")
 
 
+# 型ごとの読み上げ順の指定（order_for_reading の引数）。ツリーは根を先に読み、
+# 枝と葉は描いた順（枝 → その葉）のまま読ませる
+READING = {"tree": {"first": ("ツリーの根",), "keep_drawn": True}}
+
+
 def build(deck, out_path, template=TEMPLATE):
     check_deck(deck)
     prs = Presentation(str(template))
@@ -110,7 +115,11 @@ def build(deck, out_path, template=TEMPLATE):
         if fn is None:
             K.WARN.add(f"未対応の型です: {t}。references/slide-types.md の型を使ってください")
             continue
+        before = len(prs.slides)
         fn(style, sd)
+        # 読み上げ順を見た目の順にそろえ、文字の無い図形を装飾用にする
+        for slide in list(prs.slides)[before:]:
+            K.order_for_reading(slide, **READING.get(t, {}))
     K.WARN.where = ""
     style.finish()
     scrub_package(prs)

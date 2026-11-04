@@ -622,18 +622,19 @@ def matrix(style, sd):
 def _step(st):
     """ステップをそろえる。文字（や数）だけならステップの名前とみなす。"""
     if isinstance(st, (str, int, float)) and not isinstance(st, bool):
-        return {"title": _s(st), "period": "", "body": "", "points": []}
+        return {"title": _s(st), "period": "", "label": "", "body": "", "points": []}
     if not isinstance(st, dict):
         return None
     title = st.get("title") if st.get("title") is not None else st.get("text")
-    return {"title": _s(title), "period": _s(st.get("period")), "body": _s(st.get("body")),
-            "points": _text_list(st.get("points"))}
+    return {"title": _s(title), "period": _s(st.get("period")), "label": _s(st.get("label")),
+            "body": _s(st.get("body")), "points": _text_list(st.get("points"))}
 
 
 @register("process")
 def process(style, sd):
-    """手順・フェーズ。steps: [{title, period, body, points}]（2〜6個）。
-    上に矢羽根（期間。期間がなければ STEP 1, 2…）を並べ、その下に各ステップのカードを置く。"""
+    """手順・フェーズ。steps: [{title, period, label, body, points}]（2〜6個）。
+    上に矢羽根（期間。期間がなければ STEP 1, 2…）を並べ、その下に各ステップのカードを置く。
+    label（「S0」などの記号）を書くと、STEP n の代わりにその記号を出す（番号と記号がずれて見えないように）。"""
     s, a = style.body(sd)
     c = style.c
     raw = _list(sd.get("steps"))
@@ -645,11 +646,17 @@ def process(style, sd):
         return
     n = len(steps)
     has_period = any(st["period"] for st in steps)
+    has_label = any(st["label"] for st in steps)
+
+    def step_no(i):
+        """STEP n の代わりの記号（label を 1 つでも書いたら、全部 label を使う）。"""
+        return steps[i]["label"] if has_label else f"STEP {i + 1}"
     body_max = 85 if n <= 3 else (60 if n == 4 else (45 if n == 5 else 30))
     points_max = 3 if n <= 4 else 2
     for st in steps:
         K.max_chars_warn(st["title"], 16, "ステップの名前")
         K.max_chars_warn(st["period"], 12, "ステップの期間")
+        K.max_chars_warn(st["label"], 8, "ステップの記号")
         K.max_chars_warn(st["body"], body_max, "ステップの本文")
         if len(st["points"]) > points_max:
             K.WARN.add(f"ステップの箇条書きは {points_max} 個までにしてください（「{st['title']}」は "
@@ -719,7 +726,7 @@ def process(style, sd):
         shp = K.add_box(s.shapes, x, y0, w, ch, fill=color(i),
                         geom="pentagon" if i == 0 else "chevron")
         shp.adjustments[0] = tip / ch
-        word = st["period"] if has_period else f"STEP {i + 1}"
+        word = st["period"] if has_period else step_no(i)
         if word:
             # 文字の枠は左右に同じだけ空けて、カードの中央にそろえる
             style.text(s, x + tip, y0, w - 2 * tip, ch, word, wsize, on, bold=True, align="c",
@@ -734,7 +741,7 @@ def process(style, sd):
         y = top + pad
         bottom = top + h - pad + 0.06
         if has_period:
-            style.text(s, x + pad, y - 0.02, iw, d["lh"], f"STEP {i + 1}", z["caption"],
+            style.text(s, x + pad, y - 0.02, iw, d["lh"], step_no(i), z["caption"],
                        _ink(c, color(i), bg), bold=True, anchor="m",
                        latin=style.font("number_latin"), spacing=1)
             y += d["lh"]
@@ -906,16 +913,11 @@ def tree(style, sd):
     leaf_w = a.right - lx
     sx = bx + bw + gx / 2                 # 枝から葉への線を分ける位置
     jx = rx + rw + gx / 2                 # 根から枝への線を分ける位置（幹）
-    # 根の高さと縦の位置: 根の中心を強調する枝（なければ真ん中の枝）の中心にそろえて、
-    # 根から枝への線を1本のまっすぐな線にする。本体は a.y から（根が上に出るときだけ枝を下げる）
+    # 根の高さと縦の位置: 根は枝全体の上下の中心に置く（強調する枝の高さには寄せない）。
+    # 本体は a.y から（根が上に出るときだけ枝を下げる）
     used = sum(group_h) + gg * (nb - 1)
     rel = [sum(group_h[:i]) + gg * i + group_h[i] / 2 for i in range(nb)]
-    if hl is not None:
-        target = rel[hl]
-    elif nb % 2:
-        target = rel[nb // 2]
-    else:
-        target = (rel[0] + rel[-1]) / 2
+    target = (rel[0] + rel[-1]) / 2
     # 根の文字は 1 行に収まるなら body_large まで縮めて 1 行に（1〜2 文字だけ次の行に送らない）
     rs = next((v for v in _uniq((hs, z["body_large"]))
                if K.count_lines(K.plain(root), (rw - 0.4) * SAFE, v, True) <= 1), hs)
@@ -986,7 +988,12 @@ def tree(style, sd):
         if i == hl:
             continue
         K.add_line(s.shapes, rx + rw if i == straight else jx, m, bx, m, line, lw_n)
-    if hl is not None:
+    if hl is not None and hl == straight:
         K.add_line(s.shapes, rx + rw, rm, bx, rm, fill, lw_h)
+    elif hl is not None:
+        # 強調する枝へは、根 → 幹 → 枝 を濃い線でたどる
+        K.add_line(s.shapes, rx + rw, rm, jx, rm, fill, lw_h)
+        K.add_line(s.shapes, jx, rm, jx, mids[hl], fill, lw_h)
+        K.add_line(s.shapes, jx, mids[hl], bx, mids[hl], fill, lw_h)
     elif straight is None:
         K.add_line(s.shapes, rx + rw, rm, jx, rm, line, lw_n)

@@ -30,7 +30,7 @@ LINE_HEIGHT = 1.38
 
 # 文字の大きさの下限（digital-agency-design-system の Office 基準 S9：本文 18pt 以上、補助の文字も 12pt 以上）。
 # 本文の種類（BODY_LABELS）は 18pt 未満にしない。それ以外の文字も 12pt 未満にしない。
-# 枠に入りきらないときも、下限より小さくは縮めず「はみ出す可能性」の警告を出す（スライドを分けるか文字を減らす）。
+# 枠に入りきらないときも、下限より小さくは縮めず「文字が多すぎて枠に収まりません」の警告を出す（スライドを分けるか文字を減らす）。
 MIN_PT = 12
 BODY_PT = 18
 BODY_LABELS = {
@@ -246,9 +246,35 @@ def set_paragraph(p, align="l", line_spacing=None, space_before=None, space_afte
         p.space_after = Pt(space_after)
 
 
+# 強調の帯: (強調の文字色, 帯の色)。デザイン（style）が決める。強調語がこの文字色で書かれるとき、
+# 文字の下に薄い色の太い下線（帯）を付ける。下線なので、折り返した文や後から直した文でもずれない。
+EMPH_BAND = None
+
+
+def underline_band(run, color):
+    """文字に、薄い色の太い下線（強調の帯）を付ける。"""
+    rPr = run._r.get_or_add_rPr()
+    rPr.set("u", "heavy")
+    for tag in ("a:uLnTx", "a:uLn", "a:uFillTx", "a:uFill"):
+        el = rPr.find(qn(tag))
+        if el is not None:
+            rPr.remove(el)
+    uf = etree.Element(qn("a:uFill"))
+    sf = etree.SubElement(uf, qn("a:solidFill"))
+    etree.SubElement(sf, qn("a:srgbClr"), val=color.lstrip("#").upper())
+    # 並び順の決まり（塗り → 下線 → 書体）に合わせ、書体（latin など）の前に置く
+    anchor = next((rPr.find(qn(t)) for t in ("a:latin", "a:ea", "a:cs", "a:sym")
+                   if rPr.find(qn(t)) is not None), None)
+    if anchor is not None:
+        anchor.addprevious(uf)
+    else:
+        rPr.append(uf)
+
+
 def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True, font=None,
                latin=None, spacing=None, italic=None, tidy=True):
-    """段落に文字を書く。'**強調**' は emph_color（なければ太字のみ）で表示。"""
+    """段落に文字を書く。'**強調**' は emph_color（なければ太字のみ）で表示。
+    強調の文字色が EMPH_BAND の色なら、文字の下に薄い色の帯（太い下線）も付ける。"""
     text = as_text(text)
     if tidy:
         text = tidy_ja(text)
@@ -267,6 +293,9 @@ def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True
             spacing=spacing,
             italic=italic,
         )
+        ec = (emph_color or "").lstrip("#").upper()
+        if emph and EMPH_BAND and ec and ec == EMPH_BAND[0].lstrip("#").upper():
+            underline_band(r, EMPH_BAND[1])
 
 
 # ---------------------------------------------------------------- 図形
@@ -366,11 +395,8 @@ def add_line(shapes, x1, y1, x2, y2, color, width=1.0, dash=None):
 def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, align="l",
              anchor="t", font=None, latin=None, line_spacing=1.0, spacing=None,
              emph_color=None, fit_min=None, label="", italic=None, para_space=0,
-             margin=0.0, shape=None, wrap=True, bullet=None, bullet_color=None, tidy=True,
-             marker=None):
+             margin=0.0, shape=None, wrap=True, bullet=None, bullet_color=None, tidy=True):
     """文字を置く。text は文字列（改行で段落）か段落のリスト。
-
-    marker に色を渡すと、1 行に収まるときに限り、**強調** の下に薄い帯（マーカー）を引く。
 
     fit_min を指定すると、枠に収まるよう size から fit_min まで縮める。
     shape を渡すとその図形の中に書く（新しい箱は作らない）。
@@ -394,6 +420,8 @@ def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, alig
         WARN.add(f"「{label}」が枠からはみ出す可能性があります")
     if shape is None:
         shape = shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+        if label:
+            shape.name = label          # 読み上げ順を決めるときの手がかり（order_for_reading）
     tf = shape.text_frame
     tf.word_wrap = wrap
     tf.auto_size = None
@@ -410,57 +438,7 @@ def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, alig
             _set_bullet(p, bullet, bullet_color or color, size)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font,
                    latin=latin, spacing=spacing, italic=italic, tidy=tidy)
-    if marker and len(paras) == 1 and not bullet:
-        sx = shape.left / 914400
-        sy = shape.top / 914400
-        add_marker_bars(shape, sx + margin, sy + margin, inner_w, inner_h, paras[0], size, bold,
-                        align, anchor, marker, tidy=tidy)
     return shape
-
-
-def add_marker_bars(text_shape, x, y, w, h, text, size, bold, align, anchor, color, tidy=True):
-    """1 行の文の **強調** の下に、薄い色の帯（マーカー）を文字の後ろに引く。
-
-    位置は文字幅の見積もり（text_em）で決める。2 行以上になる文には引かない。"""
-    text = as_text(text)
-    if tidy:
-        text = tidy_ja(text)
-    chunks = split_emphasis(text)
-    if not any(e and c for c, e in chunks):
-        return
-    total = text_em(plain(text), bold) * size / 72.0
-    if total > w * 0.98:          # 1 行に収まらない（折り返す）ときは引かない
-        return
-    line_h = size * LINE_HEIGHT / 72.0
-    if align == "c":
-        x0 = x + (w - total) / 2
-    elif align == "r":
-        x0 = x + w - total
-    else:
-        x0 = x
-    if anchor == "m":
-        top = y + (h - line_h) / 2
-    elif anchor == "b":
-        top = y + h - line_h
-    else:
-        top = y
-    bar_top = top + line_h * MARKER_TOP
-    bar_h = line_h * MARKER_H
-    cx = x0
-    for chunk, emph in chunks:
-        cw = text_em(chunk, bold) * size / 72.0
-        if emph and chunk.strip():
-            pad = MARKER_PAD * size / 72.0     # 見積もりの誤差を吸収するため、左右に少し広げる
-            bar = add_box(text_shape._parent, cx - pad, bar_top, cw + 2 * pad, bar_h, fill=color, geom="pill",
-                          name="マーカー")
-            text_shape._element.addprevious(bar._element)
-        cx += cw
-
-
-# マーカーの帯の位置（行の高さに対する割合）。文字の下の方に細く重なり、両端は丸い
-MARKER_TOP = 0.68
-MARKER_H = 0.18
-MARKER_PAD = 0.15   # 左右に広げる幅（文字の大きさに対する割合）
 
 
 def _set_bullet(p, char, color, size):
@@ -480,7 +458,7 @@ def _set_bullet(p, char, color, size):
 
 def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, font=None,
                      latin=None, emph_color=None, fit_min=None, w=None, h=None, label="",
-                     line_spacing=1.0, spacing=None, marker=None):
+                     line_spacing=1.0, spacing=None):
     """プレースホルダー（タイトル等）に文字を入れる。位置はレイアウトに従う。"""
     w = w if w is not None else ph.width / 914400
     h = h if h is not None else ph.height / 914400
@@ -503,12 +481,6 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
         set_paragraph(p, align, line_spacing)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font, latin=latin,
                    spacing=spacing)
-    if marker and len(lines) == 1:
-        lins = _inset(ph, "lIns", 91440)
-        tins = _inset(ph, "tIns", 45720)
-        anc = anchor or "m"
-        add_marker_bars(ph, ph.left / 914400 + lins, ph.top / 914400 + tins, w - 2 * lins,
-                        h - 2 * tins, text, size, bold, align, anc, marker)
     return size
 
 
@@ -583,3 +555,285 @@ def add_path(shapes, x, y, w, h, paths, fill=None, line=None, line_w=1.0, rotati
                 etree.SubElement(el, qn("a:pt"), x=str(int(pts[i])), y=str(int(pts[i + 1])))
     spPr.replace(prst, cust)
     return shp
+
+
+# ---------------------------------------------------------------- アイコン（デジタル庁の素材）
+# assets/da-icons.json: デジタル庁「イラストレーション・アイコン素材」のアイコン 60 種（線 line・塗り fill）。
+# SVG の輪郭（24×24 の座標）を、そのまま PowerPoint の図形（自由な形）にする。色は元の色（1A1A1C）のまま使う
+# （色を変えると規約の「加工」に当たり、資料ごとに出典と加工の内容を書く必要が出るため）。
+
+ICONS_PATH = Path(__file__).resolve().parent.parent / "assets" / "da-icons.json"
+_ICONS = None
+_SVG_TOKEN = re.compile(r"[MLHVCZ]|-?\d*\.?\d+(?:e-?\d+)?", re.I)
+
+
+def icon_data():
+    global _ICONS
+    if _ICONS is None:
+        with open(ICONS_PATH, encoding="utf-8") as f:
+            _ICONS = json.load(f)
+    return _ICONS
+
+
+def icon_names():
+    return sorted(icon_data()["icons"])
+
+
+def _svg_cmds(d, scale):
+    """SVG の d（絶対座標の M L H V C Z だけ）を add_path の形にする。"""
+    out, cur, x, y = [], None, 0.0, 0.0
+    nums = []
+    toks = _SVG_TOKEN.findall(d)
+
+    def emit(op, vals):
+        nonlocal x, y
+        if op == "M":
+            x, y = vals
+            out.append(("M", x * scale, y * scale))
+        elif op == "L":
+            x, y = vals
+            out.append(("L", x * scale, y * scale))
+        elif op == "H":
+            x = vals[0]
+            out.append(("L", x * scale, y * scale))
+        elif op == "V":
+            y = vals[0]
+            out.append(("L", x * scale, y * scale))
+        elif op == "C":
+            out.append(("C",) + tuple(v * scale for v in vals))
+            x, y = vals[4], vals[5]
+
+    need = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6}
+    for t in toks:
+        if t.isalpha():
+            if t.upper() != t:
+                raise ValueError("相対座標のアイコンには対応していません")
+            if t == "Z":
+                out.append(("Z",))
+                cur = None
+            else:
+                cur = t
+            continue
+        nums.append(float(t))
+        if cur and len(nums) == need[cur]:
+            emit(cur, nums)
+            nums = []
+            if cur == "M":
+                cur = "L"            # M の後ろに続く数は L とみなす（SVG の決まり）
+    return out
+
+
+def add_icon(shapes, name, x, y, size, variant="line"):
+    """アイコンを置く（x, y は左上、size は一辺のインチ）。name は「help」または「help_fill」。
+    知らない名前なら None を返す。"""
+    data = icon_data()
+    base, kind = name, variant
+    for suf in ("_line", "_fill"):
+        if name.endswith(suf):
+            base, kind = name[: -len(suf)], suf[1:]
+    icon = data["icons"].get(base)
+    if icon is None:
+        return None
+    vb = data["viewbox"]
+    scale = 1000
+    groups = [_svg_cmds(d, scale) for d in icon[kind]]
+    return add_path(shapes, x, y, size, size, groups, fill=data["color"], line=None,
+                    name="アイコン", size=vb * scale)
+
+
+# assets/da-illustrations.zip: 同じ素材のイラスト 74 点（PNG。資料に使う大きさに縮めたもの）。
+ILLUST_PATH = Path(__file__).resolve().parent.parent / "assets" / "da-illustrations.zip"
+
+
+def illustration_names():
+    import zipfile
+    with zipfile.ZipFile(ILLUST_PATH) as z:
+        return sorted(n[:-4] for n in z.namelist() if n.endswith(".png"))
+
+
+def add_illustration(shapes, name, x, y, w, h, alt):
+    """イラストを (x, y, w, h) の枠に縦横比を保って収め、中央に置く。知らない名前なら None。"""
+    import io
+    import zipfile
+    with zipfile.ZipFile(ILLUST_PATH) as z:
+        try:
+            data = z.read(name + ".png")
+        except KeyError:
+            return None
+    from PIL import Image  # python-pptx が使う Pillow
+    iw, ih = Image.open(io.BytesIO(data)).size
+    k = min(w / iw, h / ih)
+    pw, ph = iw * k, ih * k
+    pic = shapes.add_picture(io.BytesIO(data), Inches(x + (w - pw) / 2), Inches(y + (h - ph) / 2),
+                             Inches(pw), Inches(ph))
+    pic.name = "イラスト"
+    set_alt(pic, alt)
+    return pic
+
+
+# ---------------------------------------------------------------- 読み上げ順と代替テキスト
+# スクリーンリーダーは、スライドの図形を spTree の並び順（＝重なりの順）に読む。
+# 描く都合の順のままだと「見出し 3 つ → 本文 3 つ」「注記が本文より先」のように読まれるので、
+# 1 枚描き終えたら order_for_reading で、見た目の順（上 → 下、左 → 右。カードはカードごと）に並べ替える。
+# 文字の無い図形（カードの地・線・帯）は「装飾用」にして読み上げから外し、重なりの一番下に回す
+# （文字の無い図形は文字の後ろにあるものなので、見た目は変わらない）。
+
+HEADER_BOTTOM = 1.38   # これより上から始まる図形は、見出しまわり（ラベル・見出し・リード文）とみなす
+DECORATIVE_URI = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}"
+ADEC_NS = "http://schemas.microsoft.com/office/drawing/2017/decorative"
+_SHAPE_TAGS = {qn("p:sp"), qn("p:pic"), qn("p:graphicFrame"), qn("p:grpSp"), qn("p:cxnSp")}
+
+
+def _c_nv_pr(el):
+    return el.find(".//" + qn("p:cNvPr"))
+
+
+def set_alt(shape, text):
+    """図形に代替テキスト（読み上げられる説明）を付ける。"""
+    el = shape._element if hasattr(shape, "_element") else shape
+    _c_nv_pr(el).set("descr", plain(as_text(text)))
+    return shape
+
+
+def set_decorative(el):
+    """図形を「装飾用」にする（PowerPoint の［装飾用にする］と同じ。読み上げられない）。"""
+    nv = _c_nv_pr(el)
+    if nv is None:
+        return
+    ext_lst = nv.find(qn("a:extLst"))
+    if ext_lst is None:
+        ext_lst = etree.SubElement(nv, qn("a:extLst"))
+    for ext in ext_lst.findall(qn("a:ext")):
+        if ext.get("uri") == DECORATIVE_URI:
+            return
+    ext = etree.SubElement(ext_lst, qn("a:ext"), uri=DECORATIVE_URI)
+    etree.SubElement(ext, "{%s}decorative" % ADEC_NS, nsmap={"adec": ADEC_NS}, val="1")
+
+
+def _has_text(el):
+    return any((t.text or "").strip() for t in el.iter(qn("a:t")))
+
+
+def _is_content(el):
+    """読み上げる図形か。文字・表・グラフ・画像・代替テキストのある図形。"""
+    if el.tag in (qn("p:graphicFrame"), qn("p:pic")):
+        return True
+    nv = _c_nv_pr(el)
+    if nv is not None and (nv.get("descr") or "").strip():
+        return True
+    if el.find(".//" + qn("p:ph")) is not None:
+        return True
+    return _has_text(el)
+
+
+def _rows(items, key):
+    """items を行に分けて、上の行から、行の中は左から並べる。
+    key(item) → (left, top, right, bottom)。縦の重なりが小さい方の高さの半分以上なら同じ行。"""
+    rows = []
+    for it in sorted(items, key=lambda i: (key(i)[1], key(i)[0])):
+        l, t, r, b = key(it)
+        for row in rows:
+            rt, rb = row["t"], row["b"]
+            over = min(b, rb) - max(t, rt)
+            if over >= 0.5 * max(1, min(b - t, rb - rt)):
+                row["items"].append(it)
+                row["t"], row["b"] = min(rt, t), max(rb, b)
+                break
+        else:
+            rows.append({"t": t, "b": b, "items": [it]})
+    rows.sort(key=lambda r: r["t"])
+    return [it for row in rows for it in sorted(row["items"], key=lambda i: key(i)[0])]
+
+
+def order_for_reading(slide, first=(), keep_drawn=False):
+    """スライドの図形を見た目の順に並べ替え、文字の無い図形を装飾用にする。
+
+    first: 先に読ませる図形の名前（add_text の label）。例: ツリーの根。
+    keep_drawn: True なら、読む図形は描いた順のまま（型の描き方がすでに読む順のとき）。
+    カード（文字の無い箱）の中の図形はカードごとにまとめ、カードのすぐ上に接して置いた
+    図形（process の矢羽根など）もそのカードの組に入れる。"""
+    tree = slide.shapes._spTree
+    shapes = list(slide.shapes)
+    els = [sh._element for sh in shapes if sh._element.tag in _SHAPE_TAGS]
+    if not els:
+        return
+    box = {}
+    for sh in shapes:
+        el = sh._element
+        try:
+            l, t, w, h = sh.left or 0, sh.top or 0, sh.width or 0, sh.height or 0
+        except Exception:
+            l = t = w = h = 0
+        box[el] = (l, t, l + w, t + h)
+    deco = [el for el in els if not _is_content(el)]
+    content = [el for el in els if _is_content(el)]
+    for el in deco:
+        set_decorative(el)
+    # カード: 文字の無い、ある程度大きい箱（線は除く）
+    min_area = int(0.3 * 914400 * 914400)
+    cards = [el for el in deco if el.tag == qn("p:sp")
+             and (box[el][2] - box[el][0]) * (box[el][3] - box[el][1]) >= min_area]
+
+    def above(el):
+        """el のすぐ下に接しているカード（el より十分に背の高いもの）。無ければ None。"""
+        l, t, r, b = box[el]
+        for cd in cards:
+            cl, ct, cr, cb = box[cd]
+            over = min(r, cr) - max(l, cl)
+            if (cd is not el and r > l and over >= 0.7 * (r - l)
+                    and -0.05 * 914400 <= ct - b <= 0.4 * 914400 and (b - t) <= 0.4 * (cb - ct)):
+                return cd
+        return None
+
+    def owner(el):
+        """el を読む組（カード）。カードの中ならそのカード、カードのすぐ上の小さな図形
+        （process の矢羽根など）なら下のカード。"""
+        own = _inside(el)
+        up = above(own)
+        return up if up is not None else own
+
+    def _inside(el):
+        l, t, r, b = box[el]
+        cx, cy = (l + r) / 2, (t + b) / 2
+        best = None
+        for cd in cards:
+            cl, ct, cr, cb = box[cd]
+            if cl <= cx <= cr and ct <= cy <= cb:
+                if best is None or (cr - cl) * (cb - ct) < (box[best][2] - box[best][0]) * (box[best][3] - box[best][1]):
+                    best = cd
+        return best if best is not None else el
+
+    groups = {}
+    for el in content:
+        groups.setdefault(owner(el), []).append(el)
+
+    def gbox(members, key_el):
+        bs = [box[m] for m in members] + ([box[key_el]] if key_el in box else [])
+        return (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs))
+
+    if keep_drawn:
+        # 見出しまわり（上端が本文より上の図形）だけは見た目の順、残りは描いた順
+        top_lim = int(HEADER_BOTTOM * 914400)
+        header = _rows([el for el in content if box[el][1] < top_lim], key=lambda e: box[e])
+        ordered = header + [el for el in content if el not in header]
+    else:
+        glist = [(k, v, gbox(v, k)) for k, v in groups.items()]
+        ordered = []
+        for k, v, _ in _rows(glist, key=lambda g: g[2]):
+            ordered += _rows(v, key=lambda e: box[e])
+    # 先に読ませる図形（名前で指定）
+    names = {el: (_c_nv_pr(el).get("name") if _c_nv_pr(el) is not None else "") for el in ordered}
+    head = [el for nm in first for el in ordered if names[el] == nm]
+    if head:
+        # 見出しまわりの直後に入れる
+        top_lim = int(HEADER_BOTTOM * 914400)
+        rest = [el for el in ordered if el not in head]
+        k = 0
+        while k < len(rest) and box[rest[k]][1] < top_lim:
+            k += 1
+        ordered = rest[:k] + head + rest[k:]
+    # 並べ替え: 装飾（描いた順のまま）→ 読む図形（読む順）
+    for el in els:
+        tree.remove(el)
+    for el in deco + ordered:
+        tree.append(el)

@@ -51,8 +51,8 @@ TECHVAN_PAIRS = [
     ("on_primary", "primary", 4.5, "白文字 / 紺"),
     ("on_primary", "primary_dark", 4.5, "白文字 / 濃紺"),
     ("number", "card_bg", 3.0, "大きな数字 / カード"),
-    ("emph", "marker", 3.0, "強調語（太字） / マーカー"),
-    ("heading", "marker", 4.5, "見出し / マーカー"),
+    ("emph", "marker", 3.0, "強調語（太字） / 強調の帯"),
+    ("heading", "marker", 4.5, "見出し / 強調の帯"),
     ("on_primary", "confidential", 3.0, "CONFIDENTIAL（厳秘・太字） / 赤地"),
     ("confidential", "bg", 3.0, "CONFIDENTIAL（社外秘・太字） / 白地"),
 ]
