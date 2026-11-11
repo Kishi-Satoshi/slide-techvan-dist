@@ -231,10 +231,10 @@ def cards(style, sd):
     # カードは中身に合わせた高さ（少し余白を足す）。低すぎると貧弱なので 1.6 インチ以上
     boxes = card_grid(len(items), a, needed=[n + 0.25 for n in needed],
                       min_h=min(full_h, 1.6))
-    # 5枚（上2・下3）のときは、上の2枚を目立たせる（highlight で指定もできる）
+    # 目立たせるカードは highlight で指定したものだけ（枚数で自動には付けない）
     highlight = sd.get("highlight")
     if highlight is None:
-        highlight = [0, 1] if len(items) == 5 else []
+        highlight = []
     if isinstance(highlight, int):
         highlight = [highlight]
     for i, (it, box) in enumerate(zip(items, boxes)):

@@ -358,11 +358,13 @@ class TechvanStyle(BaseStyle):
         cx, w = 0.9, 9.8
         y = 2.15
         if sd.get("badge"):
-            badge = " ".join(list(sd["badge"])) if len(sd["badge"]) <= 4 else sd["badge"]
-            bw = max(2.1, K.text_em(badge, True) * 15 / 72 + 0.7)
+            badge = K.plain(sd["badge"])
+            # 短い語は字間を広げて見せる（空白を挟むと読み上げで 1 文字ずつ読まれるので、字間 spc で広げる）
+            sp = 9 if len(badge) <= 4 else 4
+            bw = max(2.1, K.text_em(badge, True, sp / 15) * 15 / 72 + 0.7)
             b = K.add_box(s.shapes, cx + (w - bw) / 2, y, bw, 0.5, fill=c["primary"], geom="pill")
             self.text(s, 0, 0, 0, 0, badge, 15, c["on_primary"], bold=True, align="c",
-                      anchor="m", shape=b, spacing=4, margin=0.04)
+                      anchor="m", shape=b, spacing=sp, margin=0.04)
         y = 2.85
         title = sd.get("title", self.deck.get("title", ""))
         K.max_chars_warn(title, 26, "表紙のタイトル")
@@ -372,11 +374,11 @@ class TechvanStyle(BaseStyle):
         K.place(ph, cx, y, w, th)
         K.fill_placeholder(ph, title, 34, c["primary"], bold=True, align="c", anchor="m",
                            font=self.font("ja"), latin=self.font("latin"), fit_min=24,
-                           emph_color=c["emph"], label="表紙のタイトル")
+                           emph_color=c["emph"], label="表紙のタイトル", bands=True)
         y += th + 0.1
         if sd.get("subtitle"):
             self.text(s, cx, y, w, 0.4, "― " + sd["subtitle"] + " ―", 14, c["text"],
-                      align="c", anchor="m", fit_min=11, label="サブタイトル")
+                      align="c", anchor="m", fit_min=11, label="サブタイトル", bands=True)
             y += 0.65
         K.add_line(s.shapes, cx + w / 2 - 1.65, y, cx + w / 2 + 1.65, y, c["line_soft"], 1.0)
         y += 0.2
@@ -430,9 +432,9 @@ class TechvanStyle(BaseStyle):
                 self.text(s, cx, 3.85, w, 0.45, sd["subtitle"], 16, c["text"], align="c",
                           anchor="m", fit_min=11, label="章のサブタイトル")
             if sd.get("en"):
-                self.text(s, cx, 4.4, w, 0.4, "-  " + " ".join(sd["en"]) + "  -", 13,
+                self.text(s, cx, 4.4, w, 0.4, "-  " + sd["en"] + "  -", 13,
                           c["text_muted"], align="c", anchor="m", latin=self.font("eyebrow_latin"),
-                          spacing=2)
+                          spacing=6)
         self.cleanup(s)
         return s
 
@@ -444,25 +446,28 @@ class TechvanStyle(BaseStyle):
             K.WARN.add("techvan の最終ページはテンプレートのまま（Thank you と会社情報）なので、"
                        "message・contact は表示されません")
         self.cleanup(s)
+        # レイアウトの「Thank you」は読み上げられないので、題名をスライドの外（上）に置いて読ませる
+        # （PowerPoint の「スライドのタイトルを非表示にする」と同じ方法。見た目は変わらない）
+        K.add_hidden_title(s, "Thank you")
         return s
 
     # ------------------------------------------------------------ 本文ページ
 
     def body(self, sd):
         """テンプレートの「ユーザー設定レイアウト」（左上の旗の飾り付き）で本文ページを作る。
-        見出し（レイアウトの位置 y0.29）→ 英字ラベル（y0.98）→ リード文 → 本体（y1.42〜。リード文があれば y1.72〜）。"""
+        英字ラベル（旗の上端 y0.30）→ 見出し（y0.52。ラベルが無ければレイアウトの位置 y0.29）→ リード文 →
+        本体（y1.42〜。リード文や 2 行の見出しがあれば、その下）。読み上げは見出しが先（order_for_reading）。"""
         s = self.new_slide("body")
         c = self.c
         m = self.m
         x = m["margin_x"]
-        w = K.SLIDE_W - 2 * x
         en = sd.get("eyebrow") or self.current_section.get("en", "")
         ja = sd.get("eyebrow_ja") or sd.get("label") or self.current_section.get("ja", "")
         parts = []
         if en:
             parts.append(en.upper())
         if ja:
-            parts.append("-  " + K.spaced_ja(ja) + "  -")
+            parts.append("-  " + K.plain(ja) + "  -")
         level = self.confidential_level(sd)
         mark_w = 1.95
         mark_x = K.SLIDE_W - x - mark_w
@@ -471,28 +476,33 @@ class TechvanStyle(BaseStyle):
         ph = s.shapes.title
         tx, ty = ph.left / 914400, ph.top / 914400
         tw, th = ph.width / 914400, ph.height / 914400
+        lins = K._inset(ph, "lIns", 91440)
+        lx = tx + lins
+        right = (mark_x - 0.15) if level else K.SLIDE_W - x
         if level:
-            # CONFIDENTIAL のマークは見出しの下の行の右端（見出しは幅いっぱいに使う）
-            self.confidential_mark(s, level, mark_x, ty + th + 0.01, mark_w)
-        K.fill_placeholder(ph, title, m["title_size"], c["heading"], bold=True,
-                           anchor="m", font=self.font("ja"), latin=self.font("latin"),
-                           emph_color=c["emph"], fit_min=16, label="見出し", w=tw, h=th)
-        # 英字ラベルとリード文は、見出しの文字の左端にそろえる
-        lx = tx + K._inset(ph, "lIns", 91440)
-        lw = (mark_x - 0.15 if level else K.SLIDE_W - x) - lx
-        y = ty + th + 0.06
+            # CONFIDENTIAL のマークは右上（見出しより上に収める）
+            self.confidential_mark(s, level, mark_x, 0.12, mark_w)
+        size = m["title_size"]
+        anchor = "m"
         if parts:
-            self.text(s, lx, y, lw, 0.26, "  ".join(parts),
-                      10.5, c["primary"], bold=True,
-                      latin=self.font("eyebrow_latin"), spacing=3, anchor="m", tidy=False)
-            y += 0.28
-        top = 1.42
+            # 英字ラベルは旗の上端の高さに置き、見出しはその下に下げる（1 行か 2 行かで高さを変える）
+            self.text(s, lx, 0.30, right - lx, 0.24, "  ".join(parts), 10.5, c["primary"],
+                      bold=True, latin=self.font("eyebrow_latin"), spacing=3, anchor="m", tidy=False)
+            lines = 2 if K.count_lines(K.plain(title), tw - 2 * lins, size, True) > 1 else 1
+            ty = 0.52
+            th = 0.1 + lines * size * K.LINE_HEIGHT / 72
+            anchor = "t"
+            K.place(ph, tx, ty, tw, th)
+        K.fill_placeholder(ph, title, size, c["heading"], bold=True,
+                           anchor=anchor, font=self.font("ja"), latin=self.font("latin"),
+                           emph_color=c["emph"], fit_min=16, label="見出し", w=tw, h=th, bands=True)
+        y = ty + th + 0.02
+        top = max(1.42, y + 0.12)
         if sd.get("lead"):
             K.max_chars_warn(sd["lead"], 60, "リード文")
-            ly = max(1.14, y)
-            self.text(s, lx, ly, lw, 0.3, sd["lead"], 14, c["text"], anchor="m", fit_min=12,
-                      label="リード文")
-            top = max(1.72, ly + 0.46)
+            self.text(s, lx, y, K.SLIDE_W - x - lx, 0.3, sd["lead"], 14, c["text"], anchor="m",
+                      fit_min=12, label="リード文", bands=True)
+            top = max(1.42, y + 0.42)
         area = self.content_area(top)
         area = self.reserve_bottom(s, area, sd)
         self.cleanup(s)

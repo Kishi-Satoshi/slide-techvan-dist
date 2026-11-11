@@ -272,9 +272,10 @@ def underline_band(run, color):
 
 
 def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True, font=None,
-               latin=None, spacing=None, italic=None, tidy=True):
+               latin=None, spacing=None, italic=None, tidy=True, underline=True):
     """段落に文字を書く。'**強調**' は emph_color（なければ太字のみ）で表示。
-    強調の文字色が EMPH_BAND の色なら、文字の下に薄い色の帯（太い下線）も付ける。"""
+    強調の文字色が EMPH_BAND の色なら、文字の下に薄い色の帯（太い下線）も付ける
+    （underline=False のときは付けない。見出しは図形の帯 emphasis_bands を使う）。"""
     text = as_text(text)
     if tidy:
         text = tidy_ja(text)
@@ -294,7 +295,7 @@ def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True
             italic=italic,
         )
         ec = (emph_color or "").lstrip("#").upper()
-        if emph and EMPH_BAND and ec and ec == EMPH_BAND[0].lstrip("#").upper():
+        if underline and emph and EMPH_BAND and ec and ec == EMPH_BAND[0].lstrip("#").upper():
             underline_band(r, EMPH_BAND[1])
 
 
@@ -395,7 +396,8 @@ def add_line(shapes, x1, y1, x2, y2, color, width=1.0, dash=None):
 def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, align="l",
              anchor="t", font=None, latin=None, line_spacing=1.0, spacing=None,
              emph_color=None, fit_min=None, label="", italic=None, para_space=0,
-             margin=0.0, shape=None, wrap=True, bullet=None, bullet_color=None, tidy=True):
+             margin=0.0, shape=None, wrap=True, bullet=None, bullet_color=None, tidy=True,
+             bands=False):
     """文字を置く。text は文字列（改行で段落）か段落のリスト。
 
     fit_min を指定すると、枠に収まるよう size から fit_min まで縮める。
@@ -437,7 +439,12 @@ def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, alig
         if bullet:
             _set_bullet(p, bullet, bullet_color or color, size)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font,
-                   latin=latin, spacing=spacing, italic=italic, tidy=tidy)
+                   latin=latin, spacing=spacing, italic=italic, tidy=tidy, underline=not bands)
+    if bands and not bullet:
+        # 見出しまわりの強調は、太い下線ではなく後ろの図形の帯（emphasis_bands）
+        emphasis_bands(shapes, "\n".join(paras), shape.left / 914400 + margin,
+                       shape.top / 914400 + margin, inner_w, inner_h, size, bold, align, anchor,
+                       emph_color, line_spacing, tidy=tidy)
     return shape
 
 
@@ -458,8 +465,9 @@ def _set_bullet(p, char, color, size):
 
 def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, font=None,
                      latin=None, emph_color=None, fit_min=None, w=None, h=None, label="",
-                     line_spacing=1.0, spacing=None):
-    """プレースホルダー（タイトル等）に文字を入れる。位置はレイアウトに従う。"""
+                     line_spacing=1.0, spacing=None, bands=False):
+    """プレースホルダー（タイトル等）に文字を入れる。位置はレイアウトに従う。
+    bands=True なら、強調語の後ろに図形の帯（emphasis_bands）を置く（太い下線は付けない）。"""
     w = w if w is not None else ph.width / 914400
     h = h if h is not None else ph.height / 914400
     text = as_text(text)
@@ -480,8 +488,75 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         set_paragraph(p, align, line_spacing)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font, latin=latin,
-                   spacing=spacing)
+                   spacing=spacing, underline=not bands)
+    if bands:
+        lins = _inset(ph, "lIns", 91440)
+        tins = _inset(ph, "tIns", 45720)
+        emphasis_bands(ph._parent, text, ph.left / 914400 + lins,
+                       ph.top / 914400 + tins, w - 2 * lins, h - 2 * tins, size, bold, align,
+                       anchor or "m", emph_color, line_spacing)
     return size
+
+
+# 見出しの強調の帯（図形）: 強調語の後ろに置く長方形。高さは文字の 0.32 倍、上端は行の縦の中心から 0.26 倍下
+# （文字の下の方に少しかかる太さ）。行の折り返しは文字幅の見積もり（char_em）でたどるので、2 行の見出しにも付く。
+BAND_H = 0.32
+BAND_TOP = 0.26
+BAND_PAD = 0.06       # 左右に広げる幅（文字の大きさに対する割合）
+
+
+def _wrap_chars(chars, width_em, bold):
+    """[(文字, 強調か)] を width_em で折り返し、行のリストにする（文字幅は char_em の見積もり）。"""
+    lines, cur, w = [], [], 0.0
+    for ch, e in chars:
+        cw = char_em(ch, bold)
+        if cur and w + cw > width_em:
+            lines.append(cur)
+            cur, w = [], 0.0
+            if ch == " ":
+                continue
+        cur.append((ch, e))
+        w += cw
+    lines.append(cur)
+    return lines
+
+
+def emphasis_bands(shapes, text, x, y, w, h, size, bold, align, anchor, color, line_spacing=1.0,
+                   tidy=True):
+    """枠 (x, y, w, h) に書いた文の **強調** の後ろに、図形の帯を置く。color は EMPH_BAND の帯の色。"""
+    if not EMPH_BAND or shapes is None:
+        return
+    ec = (color or "").lstrip("#").upper()
+    if ec != EMPH_BAND[0].lstrip("#").upper():
+        return
+    band = EMPH_BAND[1]
+    text = as_text(text)
+    if tidy:
+        text = tidy_ja(text)
+    em = size / 72.0
+    line_h = em * LINE_HEIGHT * line_spacing
+    lines = []
+    for para in text.split("\n"):
+        chars = [(ch, e) for chunk, e in split_emphasis(para) for ch in chunk]
+        lines += _wrap_chars(chars, w / em * 0.98, bold)
+    if not any(e for ln in lines for _, e in ln):
+        return
+    block = len(lines) * line_h
+    top = y if anchor == "t" else (y + h - block if anchor == "b" else y + (h - block) / 2)
+    for i, ln in enumerate(lines):
+        total = sum(char_em(ch, bold) for ch, _ in ln) * em
+        x0 = x + ((w - total) / 2 if align == "c" else (w - total if align == "r" else 0))
+        cx, start = x0, None
+        for ch, e in ln + [("", False)]:
+            if e and start is None:
+                start = cx
+            if not e and start is not None:
+                center = top + line_h * (i + 0.5)
+                pad = BAND_PAD * em
+                add_box(shapes, start - pad, center + BAND_TOP * em, cx - start + 2 * pad,
+                        BAND_H * em, fill=band, name="マーカー")
+                start = None
+            cx += char_em(ch, bold) * em if ch else 0
 
 
 def _inset(ph, attr, default):
@@ -496,11 +571,6 @@ def _inset(ph, attr, default):
         except AttributeError:
             shape = None
     return default / 914400
-
-
-def spaced_ja(text):
-    """「調査サマリー」→「調 査 サ マ リ ー」のように1文字ずつ空ける。"""
-    return " ".join(list(plain(text)))
 
 
 def place(shape, x=None, y=None, w=None, h=None):
@@ -695,6 +765,24 @@ def set_alt(shape, text):
     return shape
 
 
+HIDDEN_TITLE_NAME = "読み上げ用の題名"
+
+
+def add_hidden_title(slide, text):
+    """スライドの外（上）に題名のプレースホルダーを置く。読み上げソフトと「タイトルが無い」の検査のため。"""
+    sid = slide.shapes._next_shape_id
+    xml = (
+        '<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+        f'<p:nvSpPr><p:cNvPr id="{sid}" name="{HIDDEN_TITLE_NAME}"/>'
+        '<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>'
+        f'<p:spPr><a:xfrm><a:off x="{int(Inches(0.6))}" y="{int(Inches(-1.2))}"/>'
+        f'<a:ext cx="{int(Inches(8))}" cy="{int(Inches(0.8))}"/></a:xfrm></p:spPr>'
+        '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" sz="2800"/>'
+        f'<a:t>{text}</a:t></a:r></a:p></p:txBody></p:sp>')
+    slide.shapes._spTree.append(etree.fromstring(xml))
+
+
 def set_decorative(el):
     """図形を「装飾用」にする（PowerPoint の［装飾用にする］と同じ。読み上げられない）。"""
     nv = _c_nv_pr(el)
@@ -832,6 +920,11 @@ def order_for_reading(slide, first=(), keep_drawn=False):
         while k < len(rest) and box[rest[k]][1] < top_lim:
             k += 1
         ordered = rest[:k] + head + rest[k:]
+    # ページの題名（タイトルのプレースホルダー）は、上にラベルやバッジがあっても最初に読む
+    def is_title(el):
+        ph = el.find(".//" + qn("p:ph"))
+        return ph is not None and ph.get("type") in ("title", "ctrTitle")
+    ordered = [el for el in ordered if is_title(el)] + [el for el in ordered if not is_title(el)]
     # 並べ替え: 装飾（描いた順のまま）→ 読む図形（読む順）
     for el in els:
         tree.remove(el)
