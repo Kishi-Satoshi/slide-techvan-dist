@@ -26,7 +26,7 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
 ## 2. 構成案を出して合意する
 
 - 資料の種類ごとの標準の流れ: `${CLAUDE_SKILL_DIR}/references/storylines.md`
-- 使える型（24種）と deck.json の書き方: `${CLAUDE_SKILL_DIR}/references/slide-types.md`
+- 使える型（25種）と deck.json の書き方: `${CLAUDE_SKILL_DIR}/references/slide-types.md`
   （末尾に、カード・箇条書きで使えるアイコンと、章扉の挿絵の一覧がある。デジタル庁の素材。使うのは内容に合うときだけ）
 - 書き方のルール: `${CLAUDE_SKILL_DIR}/references/writing-rules.md`（見出しは結論を言い切る文、1スライド1メッセージ、文字数の目安）
 - 文面の推敲の基準: `${CLAUDE_SKILL_DIR}/references/text-polish.md`。作業フォルダの `.claude/text-polish.setting` に書かれた
@@ -34,7 +34,7 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
   どちらも無ければ natural-japanese だけ。
   deck.json を書く前に、選んだ節に目を通す（見出しは writing-rules.md §2 が優先）。
 
-- 24 種の型をすべて使った deck.json の見本: `${CLAUDE_SKILL_DIR}/examples/catalog.deck.json`
+- 25 種の型をすべて使った deck.json の見本: `${CLAUDE_SKILL_DIR}/examples/catalog.deck.json`
   （同じフォルダに、これで作った PowerPoint と一覧画像がある）
 
 構成案は「ページ番号・型・結論の見出し・機密」の一覧で示し、修正を受けてから次へ進む。

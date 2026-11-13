@@ -36,7 +36,7 @@ BODY_PT = 18
 BODY_LABELS = {
     "カードの本文", "カードの箇条書き", "要点の補足", "補足の箇条書き", "比較の本文", "比較の箇条書き",
     "ステップの本文", "ステップの箇条書き", "根拠の本文", "根拠の箇条書き", "回答", "引用",
-    "読み取りのポイント", "まとめの一文",
+    "読み取りのポイント", "まとめの一文", "リード文", "サブタイトル", "図の要点",
 }
 
 
@@ -498,10 +498,10 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
     return size
 
 
-# 見出しの強調の帯（図形）: 強調語の後ろに置く長方形。高さは文字の 0.32 倍、上端は行の縦の中心から 0.26 倍下
-# （文字の下の方に少しかかる太さ）。行の折り返しは文字幅の見積もり（char_em）でたどるので、2 行の見出しにも付く。
-BAND_H = 0.32
-BAND_TOP = 0.26
+# 見出しの強調の帯（図形）: 強調語の後ろに置く長方形。高さは文字の 0.36 倍、上端は行の縦の中心のすぐ上（0.02 倍上）
+# （文字の下半分に重なる。游ゴシックの PowerPoint の画面で確かめた値）。行の折り返しは文字幅の見積もり（char_em）でたどるので、2 行の見出しにも付く。
+BAND_H = 0.36
+BAND_TOP = -0.02
 BAND_PAD = 0.06       # 左右に広げる幅（文字の大きさに対する割合）
 
 
@@ -721,24 +721,42 @@ def illustration_names():
         return sorted(n[:-4] for n in z.namelist() if n.endswith(".png"))
 
 
-def add_illustration(shapes, name, x, y, w, h, alt):
-    """イラストを (x, y, w, h) の枠に縦横比を保って収め、中央に置く。知らない名前なら None。"""
-    import io
+def illustration_bytes(name):
+    """同梱のイラストの PNG（知らない名前なら None）。"""
     import zipfile
     with zipfile.ZipFile(ILLUST_PATH) as z:
         try:
-            data = z.read(name + ".png")
+            return z.read(name + ".png")
         except KeyError:
             return None
+
+
+def add_image(shapes, data, x, y, w, h, alt, name="画像", valign="m"):
+    """画像（バイト列）を (x, y, w, h) の枠に縦横比を保って収め、左右の中央に置く。
+    valign は縦の寄せ（"t" 上・"m" 中央）。置いた画像を返す。"""
+    import io
     from PIL import Image  # python-pptx が使う Pillow
     iw, ih = Image.open(io.BytesIO(data)).size
     k = min(w / iw, h / ih)
     pw, ph = iw * k, ih * k
-    pic = shapes.add_picture(io.BytesIO(data), Inches(x + (w - pw) / 2), Inches(y + (h - ph) / 2),
+    top = y if valign == "t" else y + (h - ph) / 2
+    pic = shapes.add_picture(io.BytesIO(data), Inches(x + (w - pw) / 2), Inches(top),
                              Inches(pw), Inches(ph))
-    pic.name = "イラスト"
+    pic.name = name
     set_alt(pic, alt)
     return pic
+
+
+def add_illustration(shapes, name, x, y, w, h, alt):
+    """イラストを (x, y, w, h) の枠に縦横比を保って収め、中央に置く。知らない名前なら None。"""
+    data = illustration_bytes(name)
+    if data is None:
+        return None
+    return add_image(shapes, data, x, y, w, h, alt, name="イラスト")
+
+
+# figure の画像の相対パスの基準（build_pptx.build が deck.json のフォルダにする）
+DECK_DIR = Path.cwd()
 
 
 # ---------------------------------------------------------------- 読み上げ順と代替テキスト

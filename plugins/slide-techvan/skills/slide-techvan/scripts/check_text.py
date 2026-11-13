@@ -29,17 +29,19 @@ NOT_BODY_TYPES = LABEL_OK_TYPES
 ENUM_KEYS = {
     "summary": ["points"], "kpi": ["items"], "bullets": ["items"], "cards": ["items"],
     "tree": ["branches"], "process": ["steps"], "risks": ["items"], "next-actions": ["items"],
-    "chart": ["points"], "compare": ["left.points", "right.points"],
+    "chart": ["points"], "compare": ["left.points", "right.points"], "figure": ["points"],
 }
 # 担当（owner）と期限（due）を必ず書く型
 OWNER_DUE_TYPES = {"next-actions", "status"}
 HEAD_KEYS = {"title", "lead", "subtitle"}
 TABLE_KEYS = {"rows", "header"}
 SKIP_KEYS = {"type", "confidential", "en", "number", "variant", "chart", "unit", "start", "end",
-             "milestone", "status", "level", "score", "scores", "icon", "color", "illustration"}
+             "milestone", "status", "level", "score", "scores", "icon", "color", "illustration",
+             "image"}
 CONNECTIVES = ("また", "さらに", "加えて", "したがって", "そのため", "このように")
 PARTICLES = set("はがをにでとへも")
-EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-➿⭐⭕✅❌❗‼⁉]")
+# 「★3」のように星の直後に数字が続くもの（評価制度の段階名など）は絵文字として数えない
+EMOJI = re.compile("(?!★[0-9０-９])[\U0001F300-\U0001FAFF☀-➿⭐⭕✅❌❗‼⁉]")
 DASH = re.compile("[—―]")
 POLITE_END = re.compile(r"(です|ます|ました|でした|ません|ください)[。．]?$")
 

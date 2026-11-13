@@ -102,8 +102,10 @@ def check_deck(deck):
 READING = {"tree": {"first": ("ツリーの根",), "keep_drawn": True}}
 
 
-def build(deck, out_path, template=TEMPLATE):
+def build(deck, out_path, template=TEMPLATE, base_dir=None):
+    """base_dir: figure の画像の相対パスの基準（deck.json のフォルダ。省略すると今のフォルダ）。"""
     check_deck(deck)
+    K.DECK_DIR = Path(base_dir) if base_dir else Path.cwd()
     prs = Presentation(str(template))
     remove_all_slides(prs)
     set_properties(prs, deck)
@@ -161,7 +163,7 @@ def main():
     out = Path(args.out) if args.out else default_out(deck_path)
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
-        warnings = build(deck, out, args.template)
+        warnings = build(deck, out, args.template, base_dir=deck_path.resolve().parent)
     except DeckError as e:
         print(f"作成できませんでした: {e}")
         return 1

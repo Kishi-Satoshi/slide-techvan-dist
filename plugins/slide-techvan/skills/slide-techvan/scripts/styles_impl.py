@@ -377,9 +377,13 @@ class TechvanStyle(BaseStyle):
                            emph_color=c["emph"], label="表紙のタイトル", bands=True)
         y += th + 0.1
         if sd.get("subtitle"):
-            self.text(s, cx, y, w, 0.4, "― " + sd["subtitle"] + " ―", 14, c["text"],
-                      align="c", anchor="m", fit_min=11, label="サブタイトル", bands=True)
-            y += 0.65
+            # 副題は本文と同じ 18pt（長ければ 2 行）
+            sub = "― " + sd["subtitle"] + " ―"
+            n = min(2, K.count_lines(K.plain(sub), w, 18))
+            sh = n * 18 * K.LINE_HEIGHT / 72 + 0.06
+            self.text(s, cx, y, w, sh, sub, 18, c["text"],
+                      align="c", anchor="m", fit_min=18, label="サブタイトル", bands=True)
+            y += sh + 0.25
         K.add_line(s.shapes, cx + w / 2 - 1.65, y, cx + w / 2 + 1.65, y, c["line_soft"], 1.0)
         y += 0.2
         if sd.get("client"):
@@ -499,10 +503,15 @@ class TechvanStyle(BaseStyle):
         y = ty + th + 0.02
         top = max(1.42, y + 0.12)
         if sd.get("lead"):
+            # リード文は本文と同じ 18pt（1 行に約 45 文字。長ければ 2 行にして、本体を下げる）
             K.max_chars_warn(sd["lead"], 60, "リード文")
-            self.text(s, lx, y, K.SLIDE_W - x - lx, 0.3, sd["lead"], 14, c["text"], anchor="m",
-                      fit_min=12, label="リード文", bands=True)
-            top = max(1.42, y + 0.42)
+            lw = K.SLIDE_W - x - lx
+            lead_pt = 18
+            n = min(2, K.count_lines(K.plain(sd["lead"]), lw, lead_pt))
+            lh = n * lead_pt * K.LINE_HEIGHT / 72 + 0.04
+            self.text(s, lx, y, lw, lh, sd["lead"], lead_pt, c["text"], anchor="t",
+                      fit_min=lead_pt, label="リード文", bands=True)
+            top = max(1.42, y + lh + 0.12)
         area = self.content_area(top)
         area = self.reserve_bottom(s, area, sd)
         self.cleanup(s)

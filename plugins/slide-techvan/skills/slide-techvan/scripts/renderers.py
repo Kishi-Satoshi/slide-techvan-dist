@@ -4,6 +4,7 @@
 見た目の違いは style（styles_impl.py）に任せ、ここでは配置だけを決める。
 """
 import re
+from pathlib import Path
 
 from lxml import etree
 from pptx.oxml.ns import qn
@@ -261,6 +262,73 @@ def cards(style, sd):
                        bullet_color=c["primary"], para_space=2)
 
 
+# ====================================================================== 画像（図）
+
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff")
+
+
+@register("figure")
+def figure(style, sd):
+    """画像（画面の写し・図）。image: 画像のファイル（deck.json のフォルダからの相対パスか、絶対パス）
+    または illustration: 同梱のイラストの名前、alt: 代替テキスト（必須）、caption: 図の説明（任意）、
+    points: 要点（任意、2〜4 個）。points があれば左に画像・右に要点、なければ画像を大きく置く。"""
+    s, a = style.body(sd)
+    c = style.c
+    alt = K.as_text(sd.get("alt", "")).strip()
+    caption = K.as_text(sd.get("caption", "")).strip()
+    points = [K.as_text(p) for p in (sd.get("points") or []) if K.as_text(p).strip()]
+    if not alt:
+        K.WARN.add("figure には、何の画像かを書いた alt（代替テキスト）が必要です")
+        alt = caption or K.plain(sd.get("title", "")) or "画像"
+    if points:
+        check_count(points, 2, 4, "図の要点")
+    data = None
+    if sd.get("image"):
+        path = Path(K.as_text(sd["image"]))
+        if not path.is_absolute():
+            path = K.DECK_DIR / path
+        if path.suffix.lower() not in IMAGE_EXT:
+            K.WARN.add(f"画像「{path.name}」は使えない形式です（PNG・JPEG などにしてください。SVG は使えません）")
+        elif not path.exists():
+            K.WARN.add(f"画像が見つかりません: {path}")
+        else:
+            data = path.read_bytes()
+    elif sd.get("illustration"):
+        data = K.illustration_bytes(K.as_text(sd["illustration"]))
+        if data is None:
+            K.WARN.add(f"イラスト「{sd['illustration']}」はありません。references/slide-types.md の「イラスト」の一覧の名前にしてください")
+    else:
+        K.WARN.add("figure には image（画像のファイル）か illustration（イラストの名前）が必要です")
+    gap = style.gutter()
+    cap_size = style.size("caption", 14)
+    cap_h = (K.text_height(caption, a.w * 0.6 if points else a.w, cap_size) + 0.1) if caption else 0
+    if points:
+        iw = (a.w - gap) * 0.6
+        px = a.x + iw + gap
+        pw = a.right - px
+    else:
+        iw = a.w
+    ih = a.h - (cap_h + 0.08 if caption else 0)
+    if data is not None:
+        pic = K.add_image(s.shapes, data, a.x, a.y, iw, ih, alt, valign="t" if points else "m")
+        bottom = (pic.top + pic.height) / 914400
+        # 画像の輪郭（白い画像が地に溶けないように、細い線で囲む）
+        pic.line.color.rgb = K.rgb(c["card_border"])
+        pic.line.width = Pt(0.75)
+    else:
+        bottom = a.y + ih
+    if caption:
+        K.max_chars_warn(caption, 60, "図の説明")
+        style.text(s, a.x, bottom + 0.08, iw, cap_h, caption, cap_size, c["text_muted"],
+                   align="l" if points else "c", anchor="t", fit_min=12, label="図の説明")
+    if points:
+        size = style.size("list_detail", 18)
+        for p in points:
+            K.max_chars_warn(p, 50, "図の要点")
+        style.text(s, px, a.y, pw, a.h, points, size, c["text"], anchor="t", fit_min=18,
+                   label="図の要点", bullet="・", bullet_color=c["primary"], para_space=6)
+
+
 # ====================================================================== 表
 
 def _cell_border(cell, color, width_pt=0.75, sides=("L", "R", "T", "B")):
@@ -450,7 +518,6 @@ def table(style, sd):
 # types_*.py に書いた型をここで読み込む（ファイルを足すだけで型が増える）。
 def _load_type_modules():
     import importlib
-    from pathlib import Path
     for path in sorted(Path(__file__).resolve().parent.glob("types_*.py")):
         importlib.import_module(path.stem)
 
