@@ -47,7 +47,7 @@ class BaseStyle:
         self.layouts = self._find_layouts(theme["layouts"])
         self.current_section = {}
         self.audience = deck.get("audience", "internal")
-        # 強調語（emph の色で書いた文字）の下に、marker の色の帯（太い下線）を付ける
+        # 見出し・リード文・表紙の強調語（emph の色で書いた文字）の後ろに、marker の色の図形の帯を置く
         K.EMPH_BAND = (self.c["emph"], self.c["marker"]) if self.c.get("marker") else None
 
     # ------------------------------------------------------------ 共通
@@ -210,10 +210,15 @@ class BaseStyle:
         return h
 
     def arrow(self, slide, x, y, w, h, direction="right", color=None):
-        geom = "chevron" if direction == "right" else "triangle"
-        shp = K.add_box(slide.shapes, x, y, w, h, fill=color or self.c["primary"], geom=geom,
-                        rotation=180 if direction == "down" else 0)
-        return shp
+        """枠 (x, y, w, h) の中に、塗りつぶしの三角の矢印を置く（right＝右向き、down＝下向き）。"""
+        fill = color or self.c["primary"]
+        if direction == "right":
+            # 二等辺三角形（頂点が上）を 90 度回して右に向ける。高さ（底辺）は幅の 1/0.78 まで
+            th = min(h, w / 0.78)
+            cx, cy = x + w / 2, y + h / 2
+            return K.add_box(slide.shapes, cx - th / 2, cy - w / 2, th, w, fill=fill,
+                             geom="triangle", rotation=90)
+        return K.add_box(slide.shapes, x, y, w, h, fill=fill, geom="triangle", rotation=180)
 
     def level_style(self, level):
         lv = str(level).strip()

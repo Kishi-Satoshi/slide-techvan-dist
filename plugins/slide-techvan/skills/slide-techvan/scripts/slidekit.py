@@ -246,36 +246,17 @@ def set_paragraph(p, align="l", line_spacing=None, space_before=None, space_afte
         p.space_after = Pt(space_after)
 
 
-# 強調の帯: (強調の文字色, 帯の色)。デザイン（style）が決める。強調語がこの文字色で書かれるとき、
-# 文字の下に薄い色の太い下線（帯）を付ける。下線なので、折り返した文や後から直した文でもずれない。
+# 強調の帯: (強調の文字色, 帯の色)。デザイン（style）が決める。
+# 見出し・リード文・表紙の強調語（EMPH_BAND[0] の色の文字）の後ろに、EMPH_BAND[1] の色の図形の帯を置く
+# （emphasis_bands）。本文の強調は色と太字だけ。
+# 下線・蛍光ペンで強調する方式は使わない（岸の判断。改善の提案があっても取り入れない）。
 EMPH_BAND = None
 
 
-def underline_band(run, color):
-    """文字に、薄い色の太い下線（強調の帯）を付ける。"""
-    rPr = run._r.get_or_add_rPr()
-    rPr.set("u", "heavy")
-    for tag in ("a:uLnTx", "a:uLn", "a:uFillTx", "a:uFill"):
-        el = rPr.find(qn(tag))
-        if el is not None:
-            rPr.remove(el)
-    uf = etree.Element(qn("a:uFill"))
-    sf = etree.SubElement(uf, qn("a:solidFill"))
-    etree.SubElement(sf, qn("a:srgbClr"), val=color.lstrip("#").upper())
-    # 並び順の決まり（塗り → 下線 → 書体）に合わせ、書体（latin など）の前に置く
-    anchor = next((rPr.find(qn(t)) for t in ("a:latin", "a:ea", "a:cs", "a:sym")
-                   if rPr.find(qn(t)) is not None), None)
-    if anchor is not None:
-        anchor.addprevious(uf)
-    else:
-        rPr.append(uf)
-
-
 def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True, font=None,
-               latin=None, spacing=None, italic=None, tidy=True, underline=True):
+               latin=None, spacing=None, italic=None, tidy=True):
     """段落に文字を書く。'**強調**' は emph_color（なければ太字のみ）で表示。
-    強調の文字色が EMPH_BAND の色なら、文字の下に薄い色の帯（太い下線）も付ける
-    （underline=False のときは付けない。見出しは図形の帯 emphasis_bands を使う）。"""
+    文字そのものに下線・蛍光ペンは付けない（見出しまわりの帯は emphasis_bands が図形で置く）。"""
     text = as_text(text)
     if tidy:
         text = tidy_ja(text)
@@ -294,9 +275,6 @@ def write_runs(p, text, size, color, bold=False, emph_color=None, emph_bold=True
             spacing=spacing,
             italic=italic,
         )
-        ec = (emph_color or "").lstrip("#").upper()
-        if underline and emph and EMPH_BAND and ec and ec == EMPH_BAND[0].lstrip("#").upper():
-            underline_band(r, EMPH_BAND[1])
 
 
 # ---------------------------------------------------------------- 図形
@@ -439,9 +417,9 @@ def add_text(shapes, x, y, w, h, text, size=14, color="000000", bold=False, alig
         if bullet:
             _set_bullet(p, bullet, bullet_color or color, size)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font,
-                   latin=latin, spacing=spacing, italic=italic, tidy=tidy, underline=not bands)
+                   latin=latin, spacing=spacing, italic=italic, tidy=tidy)
     if bands and not bullet:
-        # 見出しまわりの強調は、太い下線ではなく後ろの図形の帯（emphasis_bands）
+        # 見出しまわりの強調は、後ろの図形の帯（emphasis_bands）
         emphasis_bands(shapes, "\n".join(paras), shape.left / 914400 + margin,
                        shape.top / 914400 + margin, inner_w, inner_h, size, bold, align, anchor,
                        emph_color, line_spacing, tidy=tidy)
@@ -467,7 +445,7 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
                      latin=None, emph_color=None, fit_min=None, w=None, h=None, label="",
                      line_spacing=1.0, spacing=None, bands=False):
     """プレースホルダー（タイトル等）に文字を入れる。位置はレイアウトに従う。
-    bands=True なら、強調語の後ろに図形の帯（emphasis_bands）を置く（太い下線は付けない）。"""
+    bands=True なら、強調語の後ろに図形の帯（emphasis_bands）を置く。"""
     w = w if w is not None else ph.width / 914400
     h = h if h is not None else ph.height / 914400
     text = as_text(text)
@@ -488,7 +466,7 @@ def fill_placeholder(ph, text, size, color, bold=True, align="l", anchor=None, f
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         set_paragraph(p, align, line_spacing)
         write_runs(p, t, size, color, bold=bold, emph_color=emph_color, font=font, latin=latin,
-                   spacing=spacing, underline=not bands)
+                   spacing=spacing)
     if bands:
         lins = _inset(ph, "lIns", 91440)
         tins = _inset(ph, "tIns", 45720)
