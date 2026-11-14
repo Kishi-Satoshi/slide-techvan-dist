@@ -27,7 +27,9 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
 
 - 資料の種類ごとの標準の流れ: `${CLAUDE_SKILL_DIR}/references/storylines.md`
 - 使える型（25種）と deck.json の書き方: `${CLAUDE_SKILL_DIR}/references/slide-types.md`
-  （末尾に、カード・箇条書きで使えるアイコンと、章扉の挿絵の一覧がある。デジタル庁の素材。使うのは内容に合うときだけ）
+  （末尾に、カード・箇条書きで使えるアイコンと、章扉・figure の挿絵の一覧がある。デジタル庁の素材。使うのは内容に合うときだけ）
+- 画像の入れ方（目安・素材の優先順・公的機関の素材と出典）: `${CLAUDE_SKILL_DIR}/references/storylines.md` の「画像の入れ方」。
+  文字と表だけのページが続かないよう、構成案の時点で画像を置くページを決める（本文の 4〜5 枚に 1 枚が目安）。
 - 書き方のルール: `${CLAUDE_SKILL_DIR}/references/writing-rules.md`（見出しは結論を言い切る文、1スライド1メッセージ、文字数の目安）
 - 文面の推敲の基準: `${CLAUDE_SKILL_DIR}/references/text-polish.md`。作業フォルダの `.claude/text-polish.setting` に書かれた
   推敲（natural-japanese・yomiyasu・japanese-tech-writing。1 行に 1 つ）の節を使う。依頼の中で名前を言われたら（「推敲は yomiyasu も」など）それを使う。
@@ -37,7 +39,7 @@ description: テクバンのデザイン（紺と白のコーポレートデザ�
 - 25 種の型をすべて使った deck.json の見本: `${CLAUDE_SKILL_DIR}/examples/catalog.deck.json`
   （同じフォルダに、これで作った PowerPoint と一覧画像がある）
 
-構成案は「ページ番号・型・結論の見出し・機密」の一覧で示し、修正を受けてから次へ進む。
+構成案は「ページ番号・型・結論の見出し・機密・画像」の一覧で示し、修正を受けてから次へ進む。
 見せる前に、見出しだけを上から読んで話が通るか、見出しの語尾や列挙の数が全部同じになっていないかを確かめる
 （見出しは言い切り・体言止め中心、列挙は内容に合わせて 2〜4。writing-rules.md §2・§4、`references/ai-smell-ja.md`）。
 表紙・目次・章扉以外の見出しが題名（「〜について」「〜の現状」「〜の概要」「〜の推移」「〜とは」など、主張のない名詞句）になっていないかも確かめ、なっていれば結論の文に書き直してから見せる（例: 「売上の推移」→「売上は3期連続で増加」）。

@@ -129,7 +129,7 @@ def _same_header(style, items, w):
 
     style.card は style.card_header_h で帯の高さを決めるので、この間だけ同じ値を返させる。"""
     hh = max(style.card_header_h(it, w) for it in items)
-    style.card_header_h = lambda item, width: hh
+    style.card_header_h = lambda item, width, large=False: hh
     try:
         yield hh
     finally:

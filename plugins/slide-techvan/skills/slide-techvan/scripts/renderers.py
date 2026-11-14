@@ -77,7 +77,8 @@ def bullets(style, sd):
         return
     n = len(items)
     has_detail = any(it.get("detail") for it in items)
-    d = style.MARKER["m"][0]
+    mk = "xl" if icon_large(sd, items) else "m"
+    d = style.MARKER[mk][0]
     tx = a.x + d + 0.25
     tw = a.w - d - 0.25
     head_size = style.size("list_head", 17) if has_detail else style.size("list_head", 17) + 1
@@ -86,7 +87,8 @@ def bullets(style, sd):
     blocks = []
     for it in items:
         K.max_chars_warn(it.get("text", ""), 40, "箇条書きの要点")
-        hh = max(0.42, K.text_height(K.plain(it.get("text", "")), tw, head_size, True) + 0.06)
+        hh = max(0.42 if mk == "m" else d,
+                 K.text_height(K.plain(it.get("text", "")), tw, head_size, True) + 0.06)
         dh = 0.0
         if it.get("detail"):
             K.max_chars_warn(it["detail"], 90 if n <= 3 else (75 if n <= 5 else 35), "要点の補足")
@@ -97,7 +99,7 @@ def bullets(style, sd):
     pitch = max(pitch, min(a.h / n, need + 0.2))
     y = a.y
     for i, (it, (hh, dh)) in enumerate(zip(items, blocks)):
-        style.marker(s, a.x, y + (hh - d) / 2, it.get("mark", i + 1), "m", icon=it.get("icon"))
+        style.marker(s, a.x, y + (hh - d) / 2, it.get("mark", i + 1), mk, icon=it.get("icon"))
         if has_detail:
             style.text(s, tx, y, tw, hh, it.get("text", ""), head_size, c["heading"], bold=True,
                        anchor="m", fit_min=12, label="要点")
@@ -196,10 +198,27 @@ def card_grid(n, a, gap=0.28, needed=None, min_h=1.9):
     return boxes
 
 
-def card_needed_height(style, it, w, size=13):
+def icon_large(sd, items):
+    """icon_size: "large" なら、アイコンを大きく置く（項目は 4 個まで。アイコンのある項目が無いときや 5 個以上は、警告して普通の大きさ）。"""
+    v = K.as_text(sd.get("icon_size", "")).strip().lower()
+    if not v or v in ("normal", "m"):
+        return False
+    if v != "large":
+        K.WARN.add(f"icon_size は large か normal にしてください（いまは {v}）")
+        return False
+    if not any(it.get("icon") for it in items):
+        K.WARN.add("icon_size が large ですが、icon のある項目がありません")
+        return False
+    if len(items) > 4:
+        K.WARN.add(f"アイコンを大きく置けるのは項目が 4 個までです（いまは {len(items)} 個）。普通の大きさにしました")
+        return False
+    return True
+
+
+def card_needed_height(style, it, w, size=13, large=False):
     """カード1枚に必要な高さの見積もり。"""
     inner_w = w - 0.44
-    h = style.card_header_h(it, w)
+    h = style.card_header_h(it, w, large)
     body = K.plain(it.get("body", ""))
     points = it.get("points") or []
     if body:
@@ -218,6 +237,7 @@ def cards(style, sd):
     check_count(items, 2, 6, "カード")
     if not items:
         return
+    large = icon_large(sd, items)
     rows = grid_rows(len(items))
     widths = []
     for cols in rows:
@@ -225,10 +245,10 @@ def cards(style, sd):
     # 余裕があれば本文を大きく（16pt）、なければ 13pt
     full_h = (a.h - 0.28 * (len(rows) - 1)) / len(rows)
     size = style.size("card_body_large", 16) if len(items) <= 3 else style.size("card_body", 14)
-    needed = [card_needed_height(style, it, w, size) for it, w in zip(items, widths)]
+    needed = [card_needed_height(style, it, w, size, large) for it, w in zip(items, widths)]
     if max(needed) > full_h:
         size = 13
-        needed = [card_needed_height(style, it, w, size) for it, w in zip(items, widths)]
+        needed = [card_needed_height(style, it, w, size, large) for it, w in zip(items, widths)]
     # カードは中身に合わせた高さ（少し余白を足す）。低すぎると貧弱なので 1.6 インチ以上
     boxes = card_grid(len(items), a, needed=[n + 0.25 for n in needed],
                       min_h=min(full_h, 1.6))
@@ -240,7 +260,7 @@ def cards(style, sd):
         highlight = [highlight]
     for i, (it, box) in enumerate(zip(items, boxes)):
         K.max_chars_warn(it.get("heading", ""), 24, "カードの見出し")
-        inner = style.card(s, box, it, i, highlight=i in highlight)
+        inner = style.card(s, box, it, i, highlight=i in highlight, large=large)
         body = it.get("body", "")
         points = it.get("points") or []
         if body:

@@ -91,7 +91,8 @@ class BaseStyle:
     #   本体の置き方: 本体は style.body() が返す Area の上端（a.y）から上詰めで置く（上下中央に寄せない。例外はカードの型だけで、項目が少なく縮めたときは上下中央）
     #   番号の丸: marker(slide, x, y, text, size="m"|"l"|"s", solid=False) … 大きさは 3 段階だけ
 
-    MARKER = {"s": (0.36, 11), "m": (0.46, 14), "l": (0.6, 18)}
+    # xl はアイコンを大きく見せるとき（icon_size: "large"）だけに使う
+    MARKER = {"s": (0.36, 11), "m": (0.46, 14), "l": (0.6, 18), "xl": (0.86, 22)}
 
     def gutter(self):
         return 0.28
@@ -547,8 +548,8 @@ class TechvanStyle(BaseStyle):
     def bullet_marker(self, slide, x, y, size, idx, item):
         return self.badge(slide, x, y, size, item.get("mark", idx + 1))
 
-    def card_header_h(self, item, w):
-        return 0.8
+    def card_header_h(self, item, w, large=False):
+        return 0.34 + self.MARKER["xl"][0] if large else 0.8
 
     @staticmethod
     def _card_title(item):
@@ -559,18 +560,20 @@ class TechvanStyle(BaseStyle):
             return f"{label}　{heading}"
         return heading
 
-    def card(self, slide, a, item, idx, highlight=False):
+    def card(self, slide, a, item, idx, highlight=False, large=False):
+        """カード 1 枚。large=True はアイコンを大きく置く（icon_size: "large"）。"""
         c = self.c
         self.plain_card(slide, a, highlight=highlight)
         pad = 0.24
         y = a.y + 0.2
-        d = self.marker(slide, a.x + pad, y, item.get("mark", idx + 1), "m", icon=item.get("icon"))
+        d = self.marker(slide, a.x + pad, y, item.get("mark", idx + 1), "xl" if large else "m",
+                        icon=item.get("icon"))
         hx = a.x + pad + d + 0.14
         hw = a.right - hx - 0.18
         self.text(slide, hx, y, hw, d, self._card_title(item), self.size("card_title", 14),
                   c["heading"], bold=True, anchor="m", fit_min=10.5, label="カードの見出し",
                   line_spacing=0.95)
-        y = a.y + 0.84
+        y = a.y + (0.2 + d + 0.18 if large else 0.84)
         return Area(a.x + pad, y, a.w - 2 * pad, a.bottom - y - 0.18)
 
     def plain_card(self, slide, a, idx=None, highlight=False):
